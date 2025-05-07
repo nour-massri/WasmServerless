@@ -237,10 +237,10 @@ impl Runtime {
             // Call get_typed_func on your clone, borrowing only guard.store mutably
             // Try both "_run" (our custom entry) and "_start" (WASI standard entry)
             let new_f = wasm_inst
-            .get_typed_func::<(), i32>(&mut guard.store, "run")
-            .or_else(|_| wasm_inst.get_typed_func::<(), i32>(&mut guard.store, "_run"))
-            .or_else(|_| wasm_inst.get_typed_func::<(), i32>(&mut guard.store, "_start"))
-            .map_err(|e| anyhow::anyhow!("Failed to get entry function (_run or _start) {}", e))?;                
+            .get_typed_func::<(), i32>(&mut guard.store, "_start")
+            .or_else(|_| wasm_inst.get_typed_func::<(), i32>(&mut guard.store, "run"))
+
+            .map_err(|e| anyhow::anyhow!("Failed to get entry function run {}", e))?;                
             guard.run_func = Some(new_f.clone());
             new_f
         };

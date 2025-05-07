@@ -1,4 +1,4 @@
-rustserver/target/*
+*/target/*
 
 *.wasm
 wasm/*

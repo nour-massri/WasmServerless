@@ -1,0 +1,10 @@
+[2m2025-05-07T18:09:20.662506Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Starting Wasm Serverless Engine
+[2m2025-05-07T18:09:20.662679Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Using cache directory: "/tmp/.tmpdpgizJ"
+[2m2025-05-07T18:09:20.664079Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Starting Unix socket server at /tmp/wasm-serverless.sock
+[2m2025-05-07T18:09:20.664285Z[0m [32m INFO[0m [2mwasm_serverless::server[0m[2m:[0m Unix socket server listening on "/tmp/wasm-serverless.sock"
+[2m2025-05-07T18:09:23.378801Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Created instance 3d07448c-4fb9-48c3-b099-58c357f6b8af, total instances: 1
+hello world
+[2m2025-05-07T18:10:29.614766Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Created instance 6b6ebc29-cb7b-4a6a-871b-0ac6b0a73f76, total instances: 2
+from main
+[2m2025-05-07T18:10:58.820901Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Shutdown signal received, stopping server
+[2m2025-05-07T18:10:58.821017Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Exporting metrics to metrics.csv

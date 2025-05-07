@@ -11,6 +11,8 @@ func run() int32 {
 }
 
 func main() {
+	fmt.Println("from main")
+
 	// This function is required for proper WASI initialization
 	// It will call your exported "run" function
 	run()

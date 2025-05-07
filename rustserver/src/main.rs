@@ -17,8 +17,8 @@ async fn main() -> Result<()> {
     info!("Starting Wasm Serverless Engine");
 
     // Create cache directory for wasmtime
-    // let cache_dir = tempfile::tempdir()?.into_path();
-    // info!("Using cache directory: {:?}", cache_dir);
+    let cache_dir = tempfile::tempdir()?.into_path();
+    info!("Using cache directory: {:?}", cache_dir);
 
     // Load config
     let socket_path =
