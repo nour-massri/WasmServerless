@@ -1,3 +1,4 @@
+//hostfuncs.rs
 use anyhow::Result;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
@@ -5,7 +6,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Mutex;
 use wasmtime::*;
-use wasmtime_wasi::{WasiCtx};
+use wasmtime_wasi::WasiCtx;
 
 /// Context for Wasm instance to handle I/O operations
 pub struct WasmIOContext {
@@ -24,7 +25,6 @@ pub trait ReadWriteSync: Read + Write {}
 impl<T: Read + Write + Send + 'static> ReadWriteSync for T {}
 
 impl WasmIOContext {
-
     pub fn new(instance_id: String, env_vars: HashMap<String, String>, ctx: WasiCtx) -> Self {
         Self {
             ctx,
@@ -35,7 +35,7 @@ impl WasmIOContext {
             file_handles: Mutex::new(HashMap::new()),
             next_fd: Mutex::new(3), // Start after stdin, stdout, stderr
         }
-    }    
+    }
     pub fn wasi_ctx(&mut self) -> &mut WasiCtx {
         &mut self.ctx
     }

@@ -1,3 +1,4 @@
+// Updated server.rs
 use crate::runtime::{PerformanceMetrics, Runtime};
 use anyhow::Result;
 use hyper::server::conn::Http;
@@ -12,7 +13,43 @@ use tokio::net::UnixListener;
 
 // Request and response types
 #[derive(Debug, Deserialize)]
-struct CreateRequest {
+struct InitRequest {
+    #[serde(default)]
+    module: String, // Base64 encoded Wasm module (optional)
+
+    #[serde(default)]
+    module_path: String, // Path to Wasm module file (optional)
+
+    #[serde(default)]
+    disable_cache: bool, // Whether to disable module caching
+}
+
+#[derive(Debug, Serialize)]
+struct InitResponse {
+    instance_id: String,
+    metrics: PerformanceMetricsResponse,
+}
+
+#[derive(Debug, Deserialize)]
+struct RunRequest {
+    instance_id: String,
+
+    #[serde(default)]
+    env: HashMap<String, String>, // Environment variables
+
+    #[serde(default)]
+    args: Vec<String>, // Command-line arguments for WASI
+}
+
+#[derive(Debug, Serialize)]
+struct RunResponse {
+    metrics: PerformanceMetricsResponse,
+    result: i32,          // Function return value
+    memory_usage_kb: u64, // Memory used by this run
+}
+
+#[derive(Debug, Deserialize)]
+struct ColdStartRequest {
     #[serde(default)]
     module: String, // Base64 encoded Wasm module (optional)
 
@@ -24,40 +61,46 @@ struct CreateRequest {
 
     #[serde(default)]
     args: Vec<String>, // Command-line arguments for WASI
+
+    #[serde(default)]
+    disable_cache: bool, // Whether to disable module caching
 }
 
 #[derive(Debug, Serialize)]
-struct CreateResponse {
+struct ColdStartResponse {
     instance_id: String,
     metrics: PerformanceMetricsResponse,
-}
-
-#[derive(Debug, Deserialize)]
-struct RunRequest {
-    instance_id: String,
-}
-
-#[derive(Debug, Serialize)]
-struct RunResponse {
-    metrics: PerformanceMetricsResponse,
-    result: i32,  // Added result field to store the function return value
+    result: i32, // Function return value
 }
 
 #[derive(Debug, Deserialize)]
 struct BenchmarkRequest {
     instance_id: String,
     iterations: usize,
+
+    #[serde(default)]
+    env: HashMap<String, String>, // Environment variables
+
+    #[serde(default)]
+    args: Vec<String>, // Command-line arguments for WASI
 }
 
 #[derive(Debug, Serialize)]
 struct BenchmarkResponse {
     operations_per_second: f64,
-    average_execution_time_ms: f64,
-    min_execution_time_ms: f64,
-    max_execution_time_ms: f64,
-    p50_execution_time_ms: f64,
-    p95_execution_time_ms: f64,
-    p99_execution_time_ms: f64,
+    average_execution_time_us: f64,
+    min_execution_time_us: f64,
+    max_execution_time_us: f64,
+    p50_execution_time_us: f64,
+    p95_execution_time_us: f64,
+    p99_execution_time_us: f64,
+    memory_usage_kb: u64,
+}
+
+#[derive(Debug, Serialize)]
+struct MemoryUsageResponse {
+    instance_id: String,
+    memory_usage_kb: u64,
 }
 
 #[derive(Debug, Serialize)]
@@ -67,25 +110,27 @@ struct MetricsResponse {
 
 #[derive(Debug, Serialize)]
 struct PerformanceMetricsResponse {
-    module_load_time_ms: u128,
-    module_compile_time_ms: u128,
-    instantiation_time_ms: u128,
-    total_cold_start_time_ms: u128,
-    warm_start_time_ms: u128,
-    execution_time_ms: u128,
+    module_load_time_us: u64,
+    module_compile_time_us: u64,
+    instantiation_time_us: u64,
+    total_cold_start_time_us: u64,
+    warm_start_time_us: u64,
+    execution_time_us: u64,
     from_cache: bool,
+    memory_usage_kb: u64,
 }
 
 impl From<PerformanceMetrics> for PerformanceMetricsResponse {
     fn from(metrics: PerformanceMetrics) -> Self {
         Self {
-            module_load_time_ms: metrics.module_load_time.as_millis(),
-            module_compile_time_ms: metrics.module_compile_time.as_millis(),
-            instantiation_time_ms: metrics.instantiation_time.as_millis(),
-            total_cold_start_time_ms: metrics.total_cold_start_time.as_millis(),
-            warm_start_time_ms: metrics.warm_start_time.as_millis(),
-            execution_time_ms: metrics.execution_time.as_millis(),
+            module_load_time_us: metrics.module_load_time_us,
+            module_compile_time_us: metrics.module_compile_time_us,
+            instantiation_time_us: metrics.instantiation_time_us,
+            total_cold_start_time_us: metrics.total_cold_start_time_us,
+            warm_start_time_us: metrics.warm_start_time_us,
+            execution_time_us: metrics.execution_time_us,
             from_cache: metrics.from_cache,
+            memory_usage_kb: metrics.memory_usage_kb,
         }
     }
 }
@@ -93,33 +138,27 @@ impl From<PerformanceMetrics> for PerformanceMetricsResponse {
 // HTTP handler
 async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Response<Body>> {
     match (req.method().as_str(), req.uri().path()) {
-        // Create a new instance
-        ("POST", "/create") => {
+        // Initialize a new instance
+        ("POST", "/init") => {
             let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
-            let create_req: CreateRequest = serde_json::from_slice(&body_bytes)?;
+            let init_req: InitRequest = serde_json::from_slice(&body_bytes)?;
 
             // Process based on whether we have a module_path or a module
-            let (instance_id, metrics) = if !create_req.module_path.is_empty() {
+            let (instance_id, metrics) = if !init_req.module_path.is_empty() {
                 // Create instance from file path
                 runtime
-                    .create_instance_from_file(
-                        &create_req.module_path,
-                        create_req.env,
-                        create_req.args,
-                    )
+                    .init_instance_from_file(&init_req.module_path)
                     .await?
-            } else if !create_req.module.is_empty() {
+            } else if !init_req.module.is_empty() {
                 // Decode base64 module and create instance
-                let module_bytes = base64::decode(&create_req.module)?;
-                runtime
-                    .create_instance(&module_bytes, create_req.env, create_req.args)
-                    .await?
+                let module_bytes = base64::decode(&init_req.module)?;
+                runtime.init_instance(&module_bytes).await?
             } else {
                 anyhow::bail!("Either module_path or module must be provided");
             };
 
             // Return the instance ID and metrics
-            let response = CreateResponse {
+            let response = InitResponse {
                 instance_id,
                 metrics: metrics.into(),
             };
@@ -136,13 +175,51 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
             let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
             let run_req: RunRequest = serde_json::from_slice(&body_bytes)?;
 
-            // Run the instance - now returns both metrics and result
-            let (metrics, result) = runtime.run_instance(&run_req.instance_id).await?;
+            // Run the instance with provided env vars and args
+            let (metrics, result) = runtime
+                .run_instance(run_req.instance_id.clone(), run_req.env, run_req.args)
+                .await?;
 
-            // Create response with both metrics and execution result
+            // Create response with metrics and execution result
             let response = RunResponse {
+                metrics: metrics.clone().into(),
+                result,
+                memory_usage_kb: metrics.memory_usage_kb,
+            };
+            let response_json = serde_json::to_string(&response)?;
+
+            Ok(Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "application/json")
+                .body(Body::from(response_json))?)
+        }
+
+        // Cold start (initialize + run)
+        ("POST", "/coldstart") => {
+            let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
+            let cold_req: ColdStartRequest = serde_json::from_slice(&body_bytes)?;
+
+            // Process based on whether we have a module_path or a module
+            let wasm_bytes = if !cold_req.module_path.is_empty() {
+                // Read module from file path
+                std::fs::read(&cold_req.module_path)?
+            } else if !cold_req.module.is_empty() {
+                // Decode base64 module
+                base64::decode(&cold_req.module)?
+            } else {
+                anyhow::bail!("Either module_path or module must be provided");
+            };
+
+            // Perform cold start (init + run)
+            let (instance_id, metrics, result) = runtime
+                .cold_start(&wasm_bytes, cold_req.env, cold_req.args)
+                .await?;
+
+            // Return response
+            let response = ColdStartResponse {
+                instance_id,
                 metrics: metrics.into(),
-                result: result,
+                result,
             };
             let response_json = serde_json::to_string(&response)?;
 
@@ -159,37 +236,68 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
 
             // Run the benchmark
             let (ops_per_second, durations) = runtime
-                .benchmark_throughput(&benchmark_req.instance_id, benchmark_req.iterations)
+                .benchmark_throughput(
+                    benchmark_req.instance_id.clone(),
+                    benchmark_req.iterations,
+                    benchmark_req.env,
+                    benchmark_req.args,
+                )
                 .await?;
 
-            // Calculate statistics
-            let mut ms_durations: Vec<f64> =
-                durations.iter().map(|d| d.as_secs_f64() * 1000.0).collect();
-            ms_durations.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            // Calculate statistics in microseconds
+            let mut us_durations: Vec<f64> = durations
+                .iter()
+                .map(|d| d.as_secs_f64() * 1_000_000.0)
+                .collect();
+            us_durations.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-            let total_ms: f64 = ms_durations.iter().sum();
-            let avg_ms = total_ms / ms_durations.len() as f64;
-            let min_ms = ms_durations.first().copied().unwrap_or(0.0);
-            let max_ms = ms_durations.last().copied().unwrap_or(0.0);
+            let total_us: f64 = us_durations.iter().sum();
+            let avg_us = total_us / us_durations.len() as f64;
+            let min_us = us_durations.first().copied().unwrap_or(0.0);
+            let max_us = us_durations.last().copied().unwrap_or(0.0);
 
             // Percentiles
-            let p50_index = (ms_durations.len() as f64 * 0.5) as usize;
-            let p95_index = (ms_durations.len() as f64 * 0.95) as usize;
-            let p99_index = (ms_durations.len() as f64 * 0.99) as usize;
+            let p50_index = (us_durations.len() as f64 * 0.5) as usize;
+            let p95_index = (us_durations.len() as f64 * 0.95) as usize;
+            let p99_index = (us_durations.len() as f64 * 0.99) as usize;
 
-            let p50_ms = ms_durations.get(p50_index).copied().unwrap_or(0.0);
-            let p95_ms = ms_durations.get(p95_index).copied().unwrap_or(0.0);
-            let p99_ms = ms_durations.get(p99_index).copied().unwrap_or(0.0);
+            let p50_us = us_durations.get(p50_index).copied().unwrap_or(0.0);
+            let p95_us = us_durations.get(p95_index).copied().unwrap_or(0.0);
+            let p99_us = us_durations.get(p99_index).copied().unwrap_or(0.0);
+
+            // Get memory overhead
+            let memory_usage_kb = runtime.get_memory_overhead(&benchmark_req.instance_id)?;
 
             // Return benchmark results
             let response = BenchmarkResponse {
                 operations_per_second: ops_per_second,
-                average_execution_time_ms: avg_ms,
-                min_execution_time_ms: min_ms,
-                max_execution_time_ms: max_ms,
-                p50_execution_time_ms: p50_ms,
-                p95_execution_time_ms: p95_ms,
-                p99_execution_time_ms: p99_ms,
+                average_execution_time_us: avg_us,
+                min_execution_time_us: min_us,
+                max_execution_time_us: max_us,
+                p50_execution_time_us: p50_us,
+                p95_execution_time_us: p95_us,
+                p99_execution_time_us: p99_us,
+                memory_usage_kb,
+            };
+            let response_json = serde_json::to_string(&response)?;
+
+            Ok(Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "application/json")
+                .body(Body::from(response_json))?)
+        }
+
+        // Get memory usage for an instance
+        ("GET", path) if path.starts_with("/memory/") => {
+            let instance_id = path.trim_start_matches("/memory/");
+
+            // Get memory overhead
+            let memory_usage_kb = runtime.get_memory_overhead(instance_id)?;
+
+            // Return memory usage
+            let response = MemoryUsageResponse {
+                instance_id: instance_id.to_string(),
+                memory_usage_kb,
             };
             let response_json = serde_json::to_string(&response)?;
 
