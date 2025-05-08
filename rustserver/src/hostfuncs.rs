@@ -6,11 +6,11 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Mutex;
 use wasmtime::*;
-use wasmtime_wasi::WasiCtx;
+use wasmtime_wasi::preview1::WasiP1Ctx;
 
 /// Context for Wasm instance to handle I/O operations
 pub struct WasmIOContext {
-    ctx: WasiCtx,
+    ctx: WasiP1Ctx,
     instance_id: String,
     env_vars: HashMap<String, String>,
     stdout: Mutex<Vec<u8>>,
@@ -25,7 +25,7 @@ pub trait ReadWriteSync: Read + Write {}
 impl<T: Read + Write + Send + 'static> ReadWriteSync for T {}
 
 impl WasmIOContext {
-    pub fn new(instance_id: String, env_vars: HashMap<String, String>, ctx: WasiCtx) -> Self {
+    pub fn new(instance_id: String, env_vars: HashMap<String, String>, ctx: WasiP1Ctx) -> Self {
         Self {
             ctx,
             instance_id,
@@ -36,7 +36,7 @@ impl WasmIOContext {
             next_fd: Mutex::new(3), // Start after stdin, stdout, stderr
         }
     }
-    pub fn wasi_ctx(&mut self) -> &mut WasiCtx {
+    pub fn wasi_ctx(&mut self) -> &mut WasiP1Ctx {
         &mut self.ctx
     }
     /// Get the next available file descriptor

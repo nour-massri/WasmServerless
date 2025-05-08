@@ -11,9 +11,9 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use sysinfo::System;
 use wasmtime::*;
-
-// Import WASI modules without the sync namespace
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+use wasmtime_wasi::preview1::{WasiP1Ctx};
+use wasmtime_wasi::preview1::*;
+use wasmtime_wasi::WasiCtxBuilder;
 
 // Global instance counter
 static INSTANCE_COUNTER: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(0));
@@ -83,17 +83,14 @@ impl Runtime {
         // Multi-threading
         config.parallel_compilation(true);
 
-        // Set strategy
-        config.strategy(Strategy::Auto);
-
         let engine = Engine::new(&config)?;
         let mut linker: Linker<WasmIOContext> = Linker::new(&engine);
 
         // Register host functions
         HostFunctions::register(&mut linker)?;
-        wasmtime_wasi::snapshots::preview_1::add_wasi_snapshot_preview1_to_linker(
+        wasmtime_wasi::preview1::add_to_linker_sync(
             &mut linker,
-            |state: &mut WasmIOContext| -> &mut WasiCtx { state.wasi_ctx() },
+            |state: &mut WasmIOContext| -> &mut WasiP1Ctx { state.wasi_ctx() },
         )?;
 
         Ok(Self {
@@ -218,7 +215,7 @@ impl Runtime {
                 WasmIOContext::new(
                     instance_id.clone(),
                     HashMap::new(),
-                    WasiCtxBuilder::new().build(),
+                    WasiCtxBuilder::new().build_p1(),
                 ),
             ),
 
@@ -266,22 +263,20 @@ impl Runtime {
         let mut guard = inst.lock().unwrap();
 
         // Prepare WASI context with environment variables and args
-        let wasi_builder = WasiCtxBuilder::new();
-        let wasi_builder = wasi_builder.inherit_stdio();
+        let mut wasi_builder = WasiCtxBuilder::new();
 
-        // Add args
-        let mut wasi_builder_result = Ok(wasi_builder);
-        for arg in &args {
-            wasi_builder_result = wasi_builder_result?.arg(arg);
-        }
-
-        // Add environment variables
-        for (key, value) in &env_vars {
-            wasi_builder_result = wasi_builder_result?.env(key, value);
-        }
-
-        let wasi_builder = wasi_builder_result?;
-        let wasip1 = wasi_builder.build();
+        // Add args all at once
+        wasi_builder.args(&args);
+        
+        // Add environment variables all at once
+        // Convert env_vars to the format expected by envs()
+        let env_vars_refs: Vec<(&str, &str)> = env_vars
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        
+        wasi_builder.envs(&env_vars_refs);
+        let wasip1 = wasi_builder.build_p1();
 
         // Create the I/O context with WASI
         let io_context = WasmIOContext::new(instance_id.clone(), env_vars, wasip1);
@@ -350,12 +345,12 @@ impl Runtime {
         let (instance_id, mut init_metrics) = self.init_instance(wasm_bytes).await?;
 
         // Run the instance
-        let (mut run_metrics, result) = self
+        let (run_metrics, result) = self
             .run_instance(instance_id.clone(), env_vars, args)
             .await?;
 
         // Combine metrics for total cold start
-        let mut combined_metrics = PerformanceMetrics {
+        let combined_metrics = PerformanceMetrics {
             module_load_time_us: init_metrics.module_load_time_us,
             module_compile_time_us: init_metrics.module_compile_time_us,
             instantiation_time_us: run_metrics.instantiation_time_us,
