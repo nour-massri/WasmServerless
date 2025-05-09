@@ -109,7 +109,7 @@ async fn main() -> Result<()> {
 
             // Export metrics before shutdown
             info!("Exporting metrics to metrics.csv");
-            rt.export_metrics_to_csv("metrics.csv")?;
+            // rt.export_metrics_to_csv("metrics.csv")?;
         }
         Err(err) => {
             eprintln!("Error listening for shutdown signal: {}", err);

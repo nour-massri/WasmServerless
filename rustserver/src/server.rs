@@ -229,83 +229,83 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .body(Body::from(response_json))?)
         }
 
-        // Benchmark an instance
-        ("POST", "/benchmark") => {
-            let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
-            let benchmark_req: BenchmarkRequest = serde_json::from_slice(&body_bytes)?;
+        // // Benchmark an instance
+        // ("POST", "/benchmark") => {
+        //     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
+        //     let benchmark_req: BenchmarkRequest = serde_json::from_slice(&body_bytes)?;
 
-            // Run the benchmark
-            let (ops_per_second, durations) = runtime
-                .benchmark_throughput(
-                    benchmark_req.instance_id.clone(),
-                    benchmark_req.iterations,
-                    benchmark_req.env,
-                    benchmark_req.args,
-                )
-                .await?;
+        //     // Run the benchmark
+        //     let (ops_per_second, durations) = runtime
+        //         .benchmark_throughput(
+        //             benchmark_req.instance_id.clone(),
+        //             benchmark_req.iterations,
+        //             benchmark_req.env,
+        //             benchmark_req.args,
+        //         )
+        //         .await?;
 
-            // Calculate statistics in microseconds
-            let mut us_durations: Vec<f64> = durations
-                .iter()
-                .map(|d| d.as_secs_f64() * 1_000_000.0)
-                .collect();
-            us_durations.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        //     // Calculate statistics in microseconds
+        //     let mut us_durations: Vec<f64> = durations
+        //         .iter()
+        //         .map(|d| d.as_secs_f64() * 1_000_000.0)
+        //         .collect();
+        //     us_durations.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-            let total_us: f64 = us_durations.iter().sum();
-            let avg_us = total_us / us_durations.len() as f64;
-            let min_us = us_durations.first().copied().unwrap_or(0.0);
-            let max_us = us_durations.last().copied().unwrap_or(0.0);
+        //     let total_us: f64 = us_durations.iter().sum();
+        //     let avg_us = total_us / us_durations.len() as f64;
+        //     let min_us = us_durations.first().copied().unwrap_or(0.0);
+        //     let max_us = us_durations.last().copied().unwrap_or(0.0);
 
-            // Percentiles
-            let p50_index = (us_durations.len() as f64 * 0.5) as usize;
-            let p95_index = (us_durations.len() as f64 * 0.95) as usize;
-            let p99_index = (us_durations.len() as f64 * 0.99) as usize;
+        //     // Percentiles
+        //     let p50_index = (us_durations.len() as f64 * 0.5) as usize;
+        //     let p95_index = (us_durations.len() as f64 * 0.95) as usize;
+        //     let p99_index = (us_durations.len() as f64 * 0.99) as usize;
 
-            let p50_us = us_durations.get(p50_index).copied().unwrap_or(0.0);
-            let p95_us = us_durations.get(p95_index).copied().unwrap_or(0.0);
-            let p99_us = us_durations.get(p99_index).copied().unwrap_or(0.0);
+        //     let p50_us = us_durations.get(p50_index).copied().unwrap_or(0.0);
+        //     let p95_us = us_durations.get(p95_index).copied().unwrap_or(0.0);
+        //     let p99_us = us_durations.get(p99_index).copied().unwrap_or(0.0);
 
-            // Get memory overhead
-            let memory_usage_kb = runtime.get_memory_overhead(&benchmark_req.instance_id)?;
+        //     // Get memory overhead
+        //     let memory_usage_kb = runtime.get_memory_overhead(&benchmark_req.instance_id)?;
 
-            // Return benchmark results
-            let response = BenchmarkResponse {
-                operations_per_second: ops_per_second,
-                average_execution_time_us: avg_us,
-                min_execution_time_us: min_us,
-                max_execution_time_us: max_us,
-                p50_execution_time_us: p50_us,
-                p95_execution_time_us: p95_us,
-                p99_execution_time_us: p99_us,
-                memory_usage_kb,
-            };
-            let response_json = serde_json::to_string(&response)?;
+        //     // Return benchmark results
+        //     let response = BenchmarkResponse {
+        //         operations_per_second: ops_per_second,
+        //         average_execution_time_us: avg_us,
+        //         min_execution_time_us: min_us,
+        //         max_execution_time_us: max_us,
+        //         p50_execution_time_us: p50_us,
+        //         p95_execution_time_us: p95_us,
+        //         p99_execution_time_us: p99_us,
+        //         memory_usage_kb,
+        //     };
+        //     let response_json = serde_json::to_string(&response)?;
 
-            Ok(Response::builder()
-                .status(StatusCode::OK)
-                .header("Content-Type", "application/json")
-                .body(Body::from(response_json))?)
-        }
+        //     Ok(Response::builder()
+        //         .status(StatusCode::OK)
+        //         .header("Content-Type", "application/json")
+        //         .body(Body::from(response_json))?)
+        // }
 
         // Get memory usage for an instance
-        ("GET", path) if path.starts_with("/memory/") => {
-            let instance_id = path.trim_start_matches("/memory/");
+        // ("GET", path) if path.starts_with("/memory/") => {
+        //     let instance_id = path.trim_start_matches("/memory/");
 
-            // Get memory overhead
-            let memory_usage_kb = runtime.get_memory_overhead(instance_id)?;
+        //     // Get memory overhead
+        //     let memory_usage_kb = runtime.get_memory_overhead(instance_id)?;
 
-            // Return memory usage
-            let response = MemoryUsageResponse {
-                instance_id: instance_id.to_string(),
-                memory_usage_kb,
-            };
-            let response_json = serde_json::to_string(&response)?;
+        //     // Return memory usage
+        //     let response = MemoryUsageResponse {
+        //         instance_id: instance_id.to_string(),
+        //         memory_usage_kb,
+        //     };
+        //     let response_json = serde_json::to_string(&response)?;
 
-            Ok(Response::builder()
-                .status(StatusCode::OK)
-                .header("Content-Type", "application/json")
-                .body(Body::from(response_json))?)
-        }
+        //     Ok(Response::builder()
+        //         .status(StatusCode::OK)
+        //         .header("Content-Type", "application/json")
+        //         .body(Body::from(response_json))?)
+        // }
 
         // Export metrics to CSV
         ("POST", "/export-metrics") => {
@@ -318,29 +318,29 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .unwrap_or("metrics.csv");
 
             // Export metrics to CSV
-            runtime.export_metrics_to_csv(path)?;
+            // runtime.export_metrics_to_csv(path)?;
 
             Ok(Response::builder()
                 .status(StatusCode::OK)
                 .body(Body::from(format!("Metrics exported to {}", path)))?)
         }
 
-        // Get all metrics
-        ("GET", "/metrics") => {
-            let metrics = runtime.get_metrics();
-            let metrics_response: Vec<PerformanceMetricsResponse> =
-                metrics.into_iter().map(Into::into).collect();
+        // // Get all metrics
+        // ("GET", "/metrics") => {
+        //     let metrics = runtime.get_metrics();
+        //     let metrics_response: Vec<PerformanceMetricsResponse> =
+        //         metrics.into_iter().map(Into::into).collect();
 
-            let response = MetricsResponse {
-                metrics: metrics_response,
-            };
-            let response_json = serde_json::to_string(&response)?;
+        //     let response = MetricsResponse {
+        //         metrics: metrics_response,
+        //     };
+        //     let response_json = serde_json::to_string(&response)?;
 
-            Ok(Response::builder()
-                .status(StatusCode::OK)
-                .header("Content-Type", "application/json")
-                .body(Body::from(response_json))?)
-        }
+        //     Ok(Response::builder()
+        //         .status(StatusCode::OK)
+        //         .header("Content-Type", "application/json")
+        //         .body(Body::from(response_json))?)
+        // }
 
         // Terminate an instance
         ("DELETE", path) if path.starts_with("/instance/") => {

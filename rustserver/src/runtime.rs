@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use sysinfo::System;
 use wasmtime::*;
-use wasmtime_wasi::preview1::{WasiP1Ctx};
+use wasmtime_wasi::preview1::WasiP1Ctx;
 use wasmtime_wasi::preview1::*;
 use wasmtime_wasi::WasiCtxBuilder;
 
@@ -54,8 +54,8 @@ pub struct Runtime {
     engine: Engine,
     linker: Linker<WasmIOContext>,
     module_cache: ModuleCache,
-    instances: Mutex<HashMap<String, Arc<Mutex<Instance>>>>,
-    pub metrics: Mutex<Vec<PerformanceMetrics>>, // Store metrics for research
+    instances: tokio::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<Instance>>>>,
+    pub metrics: tokio::sync::Mutex<Vec<PerformanceMetrics>>,
     enable_cache: bool,
 }
 
@@ -83,12 +83,14 @@ impl Runtime {
         // Multi-threading
         config.parallel_compilation(true);
 
+        config.async_support(true);
+
         let engine = Engine::new(&config)?;
         let mut linker: Linker<WasmIOContext> = Linker::new(&engine);
 
         // Register host functions
         HostFunctions::register(&mut linker)?;
-        wasmtime_wasi::preview1::add_to_linker_sync(
+        wasmtime_wasi::preview1::add_to_linker_async(
             &mut linker,
             |state: &mut WasmIOContext| -> &mut WasiP1Ctx { state.wasi_ctx() },
         )?;
@@ -97,8 +99,8 @@ impl Runtime {
             engine,
             linker,
             module_cache: ModuleCache::new(),
-            instances: Mutex::new(HashMap::new()),
-            metrics: Mutex::new(Vec::new()),
+            instances: tokio::sync::Mutex::new(HashMap::new()),
+            metrics: tokio::sync::Mutex::new(Vec::new()),
             enable_cache: cache,
         })
     }
@@ -146,7 +148,7 @@ impl Runtime {
         metrics.total_cold_start_time_us = start_time.elapsed().as_micros() as u64;
 
         // Store metrics for research
-        self.metrics.lock().unwrap().push(metrics.clone());
+        self.metrics.lock().await.push(metrics.clone());
 
         // Return the instance ID and metrics
         Ok((instance_id, metrics))
@@ -227,9 +229,9 @@ impl Runtime {
         };
 
         // Store the instance
-        self.instances.lock().unwrap().insert(
+        self.instances.lock().await.insert(
             instance_id.clone(),
-            Arc::new(Mutex::new(placeholder_instance)),
+            Arc::new(tokio::sync::Mutex::new(placeholder_instance)),
         );
 
         tracing::info!(
@@ -253,28 +255,37 @@ impl Runtime {
 
         // Get the instance
         let inst = {
-            let m = self.instances.lock().unwrap();
+            let m = self.instances.lock().await;
             m.get(&instance_id)
                 .cloned()
                 .context(format!("No instance: {}", instance_id))?
         };
 
+        // Important: Get data from the instance and drop the mutex guard BEFORE any await points
+        let instance_pre = {
+            let guard = inst.lock().await;
+            guard.instance_pre.clone() // Clone the pre-instance to avoid holding the guard
+        };
+
         // Setup for the run
-        let mut guard = inst.lock().unwrap();
+        // let mut guard = inst.lock().await;
 
         // Prepare WASI context with environment variables and args
         let mut wasi_builder = WasiCtxBuilder::new();
+        // Add this to explicitly set up stdout/stderr
+        wasi_builder.inherit_stdout();
+        wasi_builder.inherit_stderr();
 
         // Add args all at once
         wasi_builder.args(&args);
-        
+
         // Add environment variables all at once
         // Convert env_vars to the format expected by envs()
         let env_vars_refs: Vec<(&str, &str)> = env_vars
             .iter()
             .map(|(k, v)| (k.as_str(), v.as_str()))
             .collect();
-        
+
         wasi_builder.envs(&env_vars_refs);
         let wasip1 = wasi_builder.build_p1();
 
@@ -284,17 +295,14 @@ impl Runtime {
         // Create a store with the I/O context
         let mut store = Store::new(&self.engine, io_context);
 
-        // Get pre-instantiation from the instance
-        let pre_instance = &guard.instance_pre;
-
         // Instantiate the module with the configured store
         let instantiation_start = Instant::now();
 
         // Complete instantiation from the pre-instance
-        let instance = pre_instance
-            .instantiate(&mut store)
+        let instance = instance_pre
+            .instantiate_async(&mut store)
+            .await
             .context("Failed to instantiate Wasm module")?;
-
         let instantiation_time = instantiation_start.elapsed();
 
         // Try to pre-lookup entry function for faster invocation
@@ -306,27 +314,34 @@ impl Runtime {
 
         // Execute the function and get the result
         let execution_start = Instant::now();
+        // Now we can safely await without holding any MutexGuard
         let result = run_func
-            .call(&mut store, ())
+            .call_async(&mut store, ())
+            .await
             .context("Failed to call function")?;
+        tracing::info!("Function execution finished with result: {}", result);
+
         let execution_time = execution_start.elapsed();
 
         // Take memory snapshot after execution
         let memory_after = self.take_memory_snapshot()?;
         let memory_usage_kb = memory_after.process_memory_kb - memory_before.process_memory_kb;
 
-        // Update metrics
-        let mut metrics = guard.metrics.clone();
-        metrics.instantiation_time_us = instantiation_time.as_micros() as u64;
-        metrics.warm_start_time_us = warm_start.elapsed().as_micros() as u64;
-        metrics.execution_time_us = execution_time.as_micros() as u64;
-        metrics.memory_usage_kb = memory_usage_kb;
+        // Update metrics - must lock mutex again
+        let metrics = {
+            let mut guard = inst.lock().await;
+            let mut metrics = guard.metrics.clone();
+            metrics.instantiation_time_us = instantiation_time.as_micros() as u64;
+            metrics.warm_start_time_us = warm_start.elapsed().as_micros() as u64;
+            metrics.execution_time_us = execution_time.as_micros() as u64;
+            metrics.memory_usage_kb = memory_usage_kb;
 
-        // Store updated metrics
-        guard.metrics = metrics.clone();
-
+            // Update instance metrics
+            guard.metrics = metrics.clone();
+            metrics
+        };
         // Add to research metrics
-        self.metrics.lock().unwrap().push(metrics.clone());
+        self.metrics.lock().await.push(metrics.clone());
 
         // Return both metrics and result
         Ok((metrics, result))
@@ -362,7 +377,7 @@ impl Runtime {
         };
 
         // Store metrics
-        self.metrics.lock().unwrap().push(combined_metrics.clone());
+        self.metrics.lock().await.push(combined_metrics.clone());
 
         Ok((instance_id, combined_metrics, result))
     }
@@ -393,20 +408,20 @@ impl Runtime {
     }
 
     /// Get memory overhead for an instance
-    pub fn get_memory_overhead(&self, instance_id: &str) -> Result<u64> {
-        let instances = self.instances.lock().unwrap();
+    pub async fn get_memory_overhead(&self, instance_id: &str) -> Result<u64> {
+        let instances = self.instances.lock().await;
         let instance = instances
             .get(instance_id)
             .context(format!("No instance: {}", instance_id))?;
 
-        let guard = instance.lock().unwrap();
+        let guard = instance.lock().await;
 
         Ok(guard.metrics.memory_usage_kb)
     }
 
     /// Terminate and remove an instance
     pub async fn terminate_instance(&self, instance_id: &str) -> Result<()> {
-        let mut instances = self.instances.lock().unwrap();
+        let mut instances = self.instances.lock().await;
         if instances.remove(instance_id).is_some() {
             tracing::info!(
                 "Terminated instance {}, remaining instances: {}",
@@ -420,13 +435,13 @@ impl Runtime {
     }
 
     /// Get all collected metrics for research
-    pub fn get_metrics(&self) -> Vec<PerformanceMetrics> {
-        self.metrics.lock().unwrap().clone()
+    pub async fn get_metrics(&self) -> Vec<PerformanceMetrics> {
+        self.metrics.lock().await.clone()
     }
 
     /// Export metrics to a CSV file for analysis
-    pub fn export_metrics_to_csv<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        let metrics = self.metrics.lock().unwrap();
+    pub async fn export_metrics_to_csv<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        let metrics = self.metrics.lock().await;
         if metrics.is_empty() {
             return Ok(());
         }
