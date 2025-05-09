@@ -142,9 +142,6 @@ impl Runtime {
         
         metrics.module_load_time_us = module_load_time.as_micros() as u64;
 
-        // Update the total cold start time
-        metrics.total_cold_start_time_us =  metrics.module_load_time_us + metrics.module_compile_time_us + metrics.instantiation_time_us;
-
         // Store metrics for research
         self.metrics.lock().await.push(metrics.clone());
 
@@ -330,7 +327,6 @@ impl Runtime {
             metrics.warm_start_time_us = instantiation_time.as_micros() as u64;
             metrics.execution_time_us = execution_time.as_micros() as u64;
             metrics.memory_usage_kb = memory_usage_kb;
-
             // Update instance metrics
             guard.metrics = metrics.clone();
             metrics
