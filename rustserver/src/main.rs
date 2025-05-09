@@ -1,5 +1,5 @@
 use anyhow::Result;
-use clap::{Command, Parser, ValueEnum}; // Added Command import here
+use clap::{Parser, ValueEnum}; // Added Command import here
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::signal;

@@ -12,7 +12,6 @@ use std::time::{Duration, Instant};
 use sysinfo::System;
 use wasmtime::*;
 use wasmtime_wasi::preview1::WasiP1Ctx;
-use wasmtime_wasi::preview1::*;
 use wasmtime_wasi::WasiCtxBuilder;
 
 // Global instance counter
@@ -130,8 +129,6 @@ impl Runtime {
         &self,
         wasm_path: P,
     ) -> Result<(String, PerformanceMetrics)> {
-        let start_time = Instant::now();
-
         // Load the WebAssembly module from file
         let module_load_start = Instant::now();
         let wasm_bytes = fs::read(&wasm_path).context(format!(
@@ -142,10 +139,11 @@ impl Runtime {
 
         // Initialize instance with the loaded bytes
         let (instance_id, mut metrics) = self.init_instance(&wasm_bytes).await?;
+        
+        metrics.module_load_time_us = module_load_time.as_micros() as u64;
 
         // Update the total cold start time
-        metrics.module_load_time_us = module_load_time.as_micros() as u64;
-        metrics.total_cold_start_time_us = start_time.elapsed().as_micros() as u64;
+        metrics.total_cold_start_time_us =  metrics.module_load_time_us + metrics.module_compile_time_us + metrics.instantiation_time_us;
 
         // Store metrics for research
         self.metrics.lock().await.push(metrics.clone());
@@ -250,8 +248,11 @@ impl Runtime {
         env_vars: HashMap<String, String>,
         args: Vec<String>,
     ) -> Result<(PerformanceMetrics, i32)> {
-        let warm_start = Instant::now();
+        // Add environment variables all at once
+        // Convert env_vars to the format expected by envs()
         let memory_before = self.take_memory_snapshot()?;
+        // Instantiate the module with the configured store
+        let instantiation_start = Instant::now();
 
         // Get the instance
         let inst = {
@@ -266,9 +267,6 @@ impl Runtime {
             let guard = inst.lock().await;
             guard.instance_pre.clone() // Clone the pre-instance to avoid holding the guard
         };
-
-        // Setup for the run
-        // let mut guard = inst.lock().await;
 
         // Prepare WASI context with environment variables and args
         let mut wasi_builder = WasiCtxBuilder::new();
@@ -294,9 +292,6 @@ impl Runtime {
 
         // Create a store with the I/O context
         let mut store = Store::new(&self.engine, io_context);
-
-        // Instantiate the module with the configured store
-        let instantiation_start = Instant::now();
 
         // Complete instantiation from the pre-instance
         let instance = instance_pre
@@ -332,7 +327,7 @@ impl Runtime {
             let mut guard = inst.lock().await;
             let mut metrics = guard.metrics.clone();
             metrics.instantiation_time_us = instantiation_time.as_micros() as u64;
-            metrics.warm_start_time_us = warm_start.elapsed().as_micros() as u64;
+            metrics.warm_start_time_us = instantiation_time.as_micros() as u64;
             metrics.execution_time_us = execution_time.as_micros() as u64;
             metrics.memory_usage_kb = memory_usage_kb;
 
