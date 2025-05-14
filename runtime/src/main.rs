@@ -6,7 +6,6 @@ use tokio::signal;
 use tracing::{info, Level};
 
 mod hostfuncs;
-mod module_cache;
 mod runtime;
 mod server;
 
@@ -85,7 +84,7 @@ async fn main() -> Result<()> {
     };
 
     // Initialize wasmtime runtime with parsed arguments
-    let rt = runtime::Runtime::new(&cache_dir, args.optimize, args.cache)?;
+    let rt = runtime::Runtime::new(&cache_dir, args.optimize, args.cache, Some(60))?;
     let rt = Arc::new(rt);
 
     // Start server

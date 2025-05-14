@@ -1,4 +1,4 @@
-use crate::runtime::{DetailedMemoryMetrics, PerformanceMetrics, Runtime};
+use crate::runtime::{PerformanceMetrics, PrecompileMetrics, Runtime};
 use anyhow::Result;
 use hyper::server::conn::Http;
 use hyper::service::{make_service_fn, service_fn};
@@ -12,59 +12,41 @@ use tokio::net::UnixListener;
 // Request and response types
 #[derive(Debug, Deserialize)]
 struct InitRequest {
-    module_path: String, // Path to Wasm module file (only option now)
-    #[serde(default)]
-    disable_cache: bool, // Whether to disable module caching
+    wasm_path: String, // Path to .wasm file to precompile
 }
 
 #[derive(Debug, Serialize)]
 struct InitResponse {
-    instance_id: String,
-    metrics: PerformanceMetricsResponse,
+    module_id: String,
+    metrics: PrecompileMetricsResponse,
 }
 
 #[derive(Debug, Deserialize)]
 struct RunRequest {
-    instance_id: String,
+    module_id: String,
     #[serde(default)]
-    env: HashMap<String, String>, // Environment variables
+    env: HashMap<String, String>,
     #[serde(default)]
-    args: Vec<String>, // Command-line arguments for WASI
+    args: Vec<String>,
+    timeout_seconds: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]
 struct RunResponse {
+    execution_id: String,
     metrics: PerformanceMetricsResponse,
-    result: i32,          // Function return value
-    memory_usage_kb: u64, // Memory used by this run
-}
-
-#[derive(Debug, Deserialize)]
-struct InitAndRunRequest {
-    module_path: String, // Path to Wasm module file (only option now)
-    #[serde(default)]
-    env: HashMap<String, String>, // Environment variables
-    #[serde(default)]
-    args: Vec<String>, // Command-line arguments for WASI
-    #[serde(default)]
-    disable_cache: bool, // Whether to disable module caching
-}
-
-#[derive(Debug, Serialize)]
-struct InitAndRunResponse {
-    instance_id: String,
-    metrics: PerformanceMetricsResponse,
-    result: i32, // Function return value
+    result: i32,
 }
 
 #[derive(Debug, Deserialize)]
 struct BenchmarkRequest {
-    instance_id: String,
+    module_id: String,
     iterations: usize,
     #[serde(default)]
-    env: HashMap<String, String>, // Environment variables
+    env: HashMap<String, String>,
     #[serde(default)]
-    args: Vec<String>, // Command-line arguments for WASI
+    args: Vec<String>,
+    timeout_seconds: Option<u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -76,80 +58,71 @@ struct BenchmarkResponse {
     p50_execution_time_us: f64,
     p95_execution_time_us: f64,
     p99_execution_time_us: f64,
-    memory_usage_kb: u64,
 }
 
 #[derive(Debug, Serialize)]
-struct MemoryUsageResponse {
-    instance_id: String,
-    memory_usage_kb: u64,
-}
-
-#[derive(Debug, Serialize)]
-struct DetailedMemoryResponse {
-    instance_id: String,
-    process_memory_before_kb: u64,
-    process_memory_after_compile_kb: u64,
-    process_memory_after_execution_kb: u64,
-    module_memory_kb: u64,
-    instantiation_memory_kb: u64,
-    execution_memory_kb: u64,
-    total_memory_kb: u64,
-    system_total_memory_kb: u64,
-    system_used_memory_kb: u64,
+struct RunningExecutionResponse {
+    execution_id: String,
+    module_id: String,
+    duration_seconds: f64,
 }
 
 #[derive(Debug, Serialize)]
 struct MetricsResponse {
-    metrics: Vec<PerformanceMetricsResponse>,
+    runtime_metrics: Vec<PerformanceMetricsResponse>,
+    precompile_metrics: Vec<PrecompileMetricsResponse>,
+}
+
+#[derive(Debug, Serialize)]
+struct TerminateResponse {
+    success: bool,
+    message: String,
 }
 
 #[derive(Debug, Serialize)]
 struct PerformanceMetricsResponse {
+    execution_id: String,
     module_load_time_us: u64,
-    module_compile_time_us: u64,
     instantiation_time_us: u64,
-    total_cold_start_time_us: u64,
-    warm_start_time_us: u64,
     execution_time_us: u64,
-    from_cache: bool,
-    memory_usage_kb: u64,
-    module_memory_kb: u64,
-    instantiation_memory_kb: u64,
-    execution_memory_kb: u64,
+    total_run_time_us: u64,
+    timed_out: bool,
+    cancelled: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct PrecompileMetricsResponse {
+    wasm_load_time_us: u64,
+    compilation_time_us: u64,
+    save_time_us: u64,
+    total_precompile_time_us: u64,
+    wasm_size_bytes: u64,
+    cwasm_size_bytes: u64,
 }
 
 impl From<PerformanceMetrics> for PerformanceMetricsResponse {
     fn from(metrics: PerformanceMetrics) -> Self {
         Self {
+            execution_id: metrics.execution_id,
             module_load_time_us: metrics.module_load_time_us,
-            module_compile_time_us: metrics.module_compile_time_us,
             instantiation_time_us: metrics.instantiation_time_us,
-            total_cold_start_time_us: metrics.total_cold_start_time_us,
-            warm_start_time_us: metrics.warm_start_time_us,
             execution_time_us: metrics.execution_time_us,
-            from_cache: metrics.from_cache,
-            memory_usage_kb: metrics.memory_usage_kb,
-            module_memory_kb: metrics.module_memory_kb,
-            instantiation_memory_kb: metrics.instantiation_memory_kb,
-            execution_memory_kb: metrics.execution_memory_kb,
+            total_run_time_us: metrics.total_run_time_us,
+            timed_out: metrics.timed_out,
+            cancelled: metrics.cancelled,
         }
     }
 }
 
-impl From<DetailedMemoryMetrics> for DetailedMemoryResponse {
-    fn from(metrics: DetailedMemoryMetrics) -> Self {
+impl From<PrecompileMetrics> for PrecompileMetricsResponse {
+    fn from(metrics: PrecompileMetrics) -> Self {
         Self {
-            instance_id: String::new(), // Set by handler
-            process_memory_before_kb: metrics.process_memory_before_kb,
-            process_memory_after_compile_kb: metrics.process_memory_after_compile_kb,
-            process_memory_after_execution_kb: metrics.process_memory_after_execution_kb,
-            module_memory_kb: metrics.module_memory_kb,
-            instantiation_memory_kb: metrics.instantiation_memory_kb,
-            execution_memory_kb: metrics.execution_memory_kb,
-            total_memory_kb: metrics.total_memory_kb,
-            system_total_memory_kb: metrics.system_total_memory_kb,
-            system_used_memory_kb: metrics.system_used_memory_kb,
+            wasm_load_time_us: metrics.wasm_load_time_us,
+            compilation_time_us: metrics.compilation_time_us,
+            save_time_us: metrics.save_time_us,
+            total_precompile_time_us: metrics.total_precompile_time_us,
+            wasm_size_bytes: metrics.wasm_size_bytes,
+            cwasm_size_bytes: metrics.cwasm_size_bytes,
         }
     }
 }
@@ -157,19 +130,17 @@ impl From<DetailedMemoryMetrics> for DetailedMemoryResponse {
 // HTTP handler
 async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Response<Body>> {
     match (req.method().as_str(), req.uri().path()) {
-        // Initialize a new instance - only from file now
+        // Precompile a WebAssembly module
         ("POST", "/init") => {
             let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
             let init_req: InitRequest = serde_json::from_slice(&body_bytes)?;
 
-            // Create instance from file path
-            let (instance_id, metrics) = runtime
-                .init_instance_from_file(&init_req.module_path)
-                .await?;
+            // Precompile the module
+            let (module_id, metrics) = runtime.precompile_module(&init_req.wasm_path).await?;
 
-            // Return the instance ID and metrics
+            // Return the module ID and precompilation metrics
             let response = InitResponse {
-                instance_id,
+                module_id,
                 metrics: metrics.into(),
             };
             let response_json = serde_json::to_string(&response)?;
@@ -180,43 +151,24 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .body(Body::from(response_json))?)
         }
 
-        // Run an instance
+        // Run a precompiled module
         ("POST", "/run") => {
             let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
             let run_req: RunRequest = serde_json::from_slice(&body_bytes)?;
 
-            // Run the instance with provided env vars and args
+            // Run the module with timeout support
             let (metrics, result) = runtime
-                .run_instance(run_req.instance_id.clone(), run_req.env, run_req.args)
+                .run_module_with_timeout(
+                    run_req.module_id.clone(),
+                    run_req.env,
+                    run_req.args,
+                    run_req.timeout_seconds,
+                )
                 .await?;
 
             // Create response with metrics and execution result
             let response = RunResponse {
-                metrics: metrics.clone().into(),
-                result,
-                memory_usage_kb: metrics.memory_usage_kb,
-            };
-            let response_json = serde_json::to_string(&response)?;
-
-            Ok(Response::builder()
-                .status(StatusCode::OK)
-                .header("Content-Type", "application/json")
-                .body(Body::from(response_json))?)
-        }
-
-        // Cold start (initialize + run) - only from file now
-        ("POST", "/init_and_run") => {
-            let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
-            let init_and_run_req: InitAndRunRequest = serde_json::from_slice(&body_bytes)?;
-
-            // Perform cold start from file
-            let (instance_id, metrics, result) = runtime
-                .init_and_run(&init_and_run_req.module_path, init_and_run_req.env, init_and_run_req.args)
-                .await?;
-
-            // Return response
-            let response = InitAndRunResponse {
-                instance_id,
+                execution_id: metrics.execution_id.clone(),
                 metrics: metrics.into(),
                 result,
             };
@@ -228,7 +180,7 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .body(Body::from(response_json))?)
         }
 
-        // Benchmark an instance
+        // Benchmark a precompiled module
         ("POST", "/benchmark") => {
             let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
             let benchmark_req: BenchmarkRequest = serde_json::from_slice(&body_bytes)?;
@@ -236,10 +188,11 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
             // Run the benchmark
             let (ops_per_second, durations) = runtime
                 .benchmark_throughput(
-                    benchmark_req.instance_id.clone(),
+                    benchmark_req.module_id.clone(),
                     benchmark_req.iterations,
                     benchmark_req.env,
                     benchmark_req.args,
+                    benchmark_req.timeout_seconds,
                 )
                 .await?;
 
@@ -264,9 +217,6 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
             let p95_us = us_durations.get(p95_index).copied().unwrap_or(0.0);
             let p99_us = us_durations.get(p99_index).copied().unwrap_or(0.0);
 
-            // Get memory overhead
-            let memory_usage_kb = runtime.get_memory_overhead(&benchmark_req.instance_id).await?;
-
             // Return benchmark results
             let response = BenchmarkResponse {
                 operations_per_second: ops_per_second,
@@ -276,7 +226,6 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 p50_execution_time_us: p50_us,
                 p95_execution_time_us: p95_us,
                 p99_execution_time_us: p99_us,
-                memory_usage_kb,
             };
             let response_json = serde_json::to_string(&response)?;
 
@@ -286,37 +235,19 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .body(Body::from(response_json))?)
         }
 
-        // Get basic memory usage for an instance
-        ("GET", path) if path.starts_with("/memory/") => {
-            let instance_id = path.trim_start_matches("/memory/");
+        // Get running executions
+        ("GET", "/executions") => {
+            let running_executions = runtime.get_running_executions().await;
 
-            // Get memory overhead
-            let memory_usage_kb = runtime.get_memory_overhead(instance_id).await?;
+            let response: Vec<RunningExecutionResponse> = running_executions
+                .into_iter()
+                .map(|exec| RunningExecutionResponse {
+                    execution_id: exec.execution_id,
+                    module_id: exec.module_id,
+                    duration_seconds: exec.start_time.elapsed().as_secs_f64(),
+                })
+                .collect();
 
-            // Return memory usage
-            let response = MemoryUsageResponse {
-                instance_id: instance_id.to_string(),
-                memory_usage_kb,
-            };
-            let response_json = serde_json::to_string(&response)?;
-
-            Ok(Response::builder()
-                .status(StatusCode::OK)
-                .header("Content-Type", "application/json")
-                .body(Body::from(response_json))?)
-        }
-
-        // Get detailed memory metrics for an instance
-        ("GET", path) if path.starts_with("/memory-detailed/") => {
-            let instance_id = path.trim_start_matches("/memory-detailed/");
-
-            // Get detailed memory metrics
-            let metrics = runtime.get_detailed_memory_metrics(instance_id).await?;
-            
-            // Create response
-            let mut response: DetailedMemoryResponse = metrics.into();
-            response.instance_id = instance_id.to_string();
-            
             let response_json = serde_json::to_string(&response)?;
 
             Ok(Response::builder()
@@ -333,44 +264,108 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
             let path = export_req
                 .get("path")
                 .and_then(|v| v.as_str())
-                .unwrap_or("metrics.csv");
+                .unwrap_or("metrics");
 
-            // Export metrics to CSV
+            // Export both runtime and precompilation metrics to CSV
             runtime.export_metrics_to_csv(path).await?;
 
             Ok(Response::builder()
                 .status(StatusCode::OK)
-                .body(Body::from(format!("Metrics exported to {}", path)))?)
+                .body(Body::from(format!(
+                    "Metrics exported to {}.runtime.csv and {}.precompile.csv",
+                    path, path
+                )))?)
         }
 
         // Get all metrics
         ("GET", "/metrics") => {
-            // Add .await here to get the actual Vec<PerformanceMetrics>
-            let metrics = runtime.get_metrics().await;
-            let metrics_response: Vec<PerformanceMetricsResponse> =
-                metrics.into_iter().map(Into::into).collect();
-        
+            let runtime_metrics = runtime.get_metrics().await;
+            let precompile_metrics = runtime.get_precompile_metrics().await;
+
+            let runtime_response: Vec<PerformanceMetricsResponse> =
+                runtime_metrics.into_iter().map(Into::into).collect();
+            let precompile_response: Vec<PrecompileMetricsResponse> =
+                precompile_metrics.into_iter().map(Into::into).collect();
+
             let response = MetricsResponse {
-                metrics: metrics_response,
+                runtime_metrics: runtime_response,
+                precompile_metrics: precompile_response,
             };
             let response_json = serde_json::to_string(&response)?;
-        
+
             Ok(Response::builder()
                 .status(StatusCode::OK)
                 .header("Content-Type", "application/json")
                 .body(Body::from(response_json))?)
         }
 
-        // Terminate an instance
-        ("DELETE", path) if path.starts_with("/instance/") => {
-            let instance_id = path.trim_start_matches("/instance/");
+        // Terminate specific execution
+        ("DELETE", path) if path.starts_with("/execution/") => {
+            let execution_id = path.trim_start_matches("/execution/");
 
-            // Terminate the instance
-            runtime.terminate_instance(instance_id).await?;
+            match runtime.terminate_execution(execution_id).await {
+                Ok(_) => {
+                    let response = TerminateResponse {
+                        success: true,
+                        message: format!("Execution {} terminated", execution_id),
+                    };
+                    let response_json = serde_json::to_string(&response)?;
 
-            Ok(Response::builder()
-                .status(StatusCode::OK)
-                .body(Body::empty())?)
+                    Ok(Response::builder()
+                        .status(StatusCode::OK)
+                        .header("Content-Type", "application/json")
+                        .body(Body::from(response_json))?)
+                }
+                Err(e) => {
+                    let response = TerminateResponse {
+                        success: false,
+                        message: format!("Failed to terminate execution: {}", e),
+                    };
+                    let response_json = serde_json::to_string(&response)?;
+
+                    Ok(Response::builder()
+                        .status(StatusCode::NOT_FOUND)
+                        .header("Content-Type", "application/json")
+                        .body(Body::from(response_json))?)
+                }
+            }
+        }
+
+        // Terminate all executions for a module
+        ("DELETE", path) if path.starts_with("/module/") && path.ends_with("/executions") => {
+            let module_id = path
+                .trim_start_matches("/module/")
+                .trim_end_matches("/executions");
+
+            match runtime.terminate_module_executions(module_id).await {
+                Ok(count) => {
+                    let response = TerminateResponse {
+                        success: true,
+                        message: format!(
+                            "Terminated {} executions for module {}",
+                            count, module_id
+                        ),
+                    };
+                    let response_json = serde_json::to_string(&response)?;
+
+                    Ok(Response::builder()
+                        .status(StatusCode::OK)
+                        .header("Content-Type", "application/json")
+                        .body(Body::from(response_json))?)
+                }
+                Err(e) => {
+                    let response = TerminateResponse {
+                        success: false,
+                        message: format!("Failed to terminate executions: {}", e),
+                    };
+                    let response_json = serde_json::to_string(&response)?;
+
+                    Ok(Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .header("Content-Type", "application/json")
+                        .body(Body::from(response_json))?)
+                }
+            }
         }
 
         // Health check

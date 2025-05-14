@@ -1,78 +1,85 @@
 use crate::hostfuncs::{HostFunctions, WasmIOContext};
-use crate::module_cache::ModuleCache;
-use crate::module_cache::ModuleData;
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
-use sysinfo::System;
+use tokio::time::{timeout, Duration as TokioDuration};
+use tokio_util::sync::CancellationToken;
+use uuid::Uuid;
 use wasmtime::*;
 use wasmtime_wasi::preview1::WasiP1Ctx;
 use wasmtime_wasi::WasiCtxBuilder;
 
-// Global instance counter
-static INSTANCE_COUNTER: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(0));
+// Global module counter for unique module IDs
+static MODULE_COUNTER: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(0));
 
-// Enhanced performance metrics struct with microsecond precision and detailed memory measurements
+// Enhanced performance metrics struct with timing only
 #[derive(Debug, Clone, Default)]
 pub struct PerformanceMetrics {
-    pub module_load_time_us: u64,      // Time to load module from disk
-    pub module_compile_time_us: u64,   // Time to compile module (if not cached)
-    pub instantiation_time_us: u64,    // Time to instantiate the module
-    pub total_cold_start_time_us: u64, // Total time from request to ready (load + compile + instantiation)
-    pub warm_start_time_us: u64,       // Time to instantiate the module (warm start)
-    pub execution_time_us: u64,        // Time for function execution
-    pub from_cache: bool,              // Whether module was loaded from cache
-    pub memory_usage_kb: u64,          // Total memory used by the instance
-    pub module_memory_kb: u64,         // Memory used by the module itself
-    pub instantiation_memory_kb: u64,  // Memory overhead from instantiation
-    pub execution_memory_kb: u64,      // Memory allocated during execution
+    pub execution_id: String,       // Execution ID
+    pub module_load_time_us: u64,   // Time to load precompiled module
+    pub instantiation_time_us: u64, // Time to instantiate the module
+    pub execution_time_us: u64,     // Time for function execution
+    pub total_run_time_us: u64,     // Total time from load to execution complete
+    pub timed_out: bool,            // Whether execution timed out
+    pub cancelled: bool,            // Whether execution was cancelled
 }
 
-// Memory snapshot for calculating overhead
+// Precompilation metrics
+#[derive(Debug, Clone, Default)]
+pub struct PrecompileMetrics {
+    pub wasm_load_time_us: u64,        // Time to load .wasm file
+    pub compilation_time_us: u64,      // Time to compile to .cwasm
+    pub save_time_us: u64,             // Time to save .cwasm file
+    pub total_precompile_time_us: u64, // Total precompilation time
+    pub wasm_size_bytes: u64,          // Size of input .wasm file
+    pub cwasm_size_bytes: u64,         // Size of output .cwasm file
+}
+
+// Running execution tracking
 #[derive(Debug, Clone)]
-pub struct MemorySnapshot {
-    pub total_memory_kb: u64,
-    pub used_memory_kb: u64,
-    pub process_memory_kb: u64,
-    pub timestamp: Instant,
+pub struct RunningExecution {
+    pub execution_id: String,
+    pub module_id: String,
+    pub start_time: Instant,
+    pub cancellation_token: CancellationToken,
 }
 
-/// Represents a running Wasm instance
-pub struct Instance {
-    pub id: String,
-    pub store: Store<WasmIOContext>,
-    pub instance_pre: wasmtime::InstancePre<WasmIOContext>,
-    pub run_func: Option<TypedFunc<(), i32>>,
-    pub metrics: PerformanceMetrics,
-    pub memory_before_load: Option<MemorySnapshot>,
-    pub memory_after_load: Option<MemorySnapshot>,
-    pub memory_after_compile: Option<MemorySnapshot>,
-    pub memory_before_instantiation: Option<MemorySnapshot>,
-    pub memory_after_instantiation: Option<MemorySnapshot>,
-    pub memory_after_execution: Option<MemorySnapshot>,
+// Storage for precompiled modules
+pub struct PrecompiledModule {
+    pub module_id: String,
+    pub cwasm_path: String,
+    pub module: Module,
+    pub creation_time: Instant,
 }
 
 /// Main runtime for wasmtime
 pub struct Runtime {
     engine: Engine,
     linker: Linker<WasmIOContext>,
-    module_cache: ModuleCache,
-    instances: tokio::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<Instance>>>>,
+    precompiled_modules: tokio::sync::Mutex<HashMap<String, PrecompiledModule>>,
+    running_executions: tokio::sync::Mutex<HashMap<String, RunningExecution>>,
     pub metrics: tokio::sync::Mutex<Vec<PerformanceMetrics>>,
-    enable_cache: bool,
+    pub precompile_metrics: tokio::sync::Mutex<Vec<PrecompileMetrics>>,
+    cache_dir: String,
+    default_timeout_seconds: u64,
 }
 
 impl Runtime {
-    /// Create a new runtime with the given cache directory
-    pub fn new<P: AsRef<Path>>(_cache_dir: P, optimize: bool, cache: bool) -> Result<Self> {
+    /// Create a new runtime with timeout support
+    pub fn new<P: AsRef<Path>>(
+        cache_dir: P,
+        optimize: bool,
+        _cache: bool,
+        default_timeout_seconds: Option<u64>,
+    ) -> Result<Self> {
         let mut config = Config::new();
 
         if !optimize {
-            // Faster init
+            // Faster instantiation for development
             config.strategy(Strategy::Winch);
         } else {
             // Optimize for execution speed
@@ -97,328 +104,357 @@ impl Runtime {
             |state: &mut WasmIOContext| -> &mut WasiP1Ctx { state.wasi_ctx() },
         )?;
 
+        // Create cache directory if it doesn't exist
+        let cache_path = cache_dir.as_ref();
+        if !cache_path.exists() {
+            fs::create_dir_all(&cache_path)?;
+        }
+
         Ok(Self {
             engine,
             linker,
-            module_cache: ModuleCache::new(),
-            instances: tokio::sync::Mutex::new(HashMap::new()),
+            precompiled_modules: tokio::sync::Mutex::new(HashMap::new()),
+            running_executions: tokio::sync::Mutex::new(HashMap::new()),
             metrics: tokio::sync::Mutex::new(Vec::new()),
-            enable_cache: cache,
+            precompile_metrics: tokio::sync::Mutex::new(Vec::new()),
+            cache_dir: cache_path.to_string_lossy().to_string(),
+            default_timeout_seconds: default_timeout_seconds.unwrap_or(300), // 5 minutes default
         })
     }
 
-    // Set cache enabled/disabled
-    pub fn set_cache_enabled(&mut self, enabled: bool) {
-        self.enable_cache = enabled;
-    }
-
-    // Take memory snapshot to calculate overhead - outside timing measurements
-    fn take_memory_snapshot(&self) -> Result<MemorySnapshot> {
-        let mut system = System::new_all();
-        system.refresh_all();
-
-        let pid = sysinfo::Pid::from(std::process::id() as usize);
-        let process = system.process(pid).context("Failed to get process info")?;
-
-        Ok(MemorySnapshot {
-            total_memory_kb: system.total_memory() / 1024,
-            used_memory_kb: system.used_memory() / 1024,
-            process_memory_kb: process.memory() / 1024,
-            timestamp: Instant::now(),
-        })
-    }
-
-    /// Initialize an instance from a file path with accurate memory measurements
-    pub async fn init_instance_from_file<P: AsRef<Path>>(
+    /// Precompile a WebAssembly module and return a module ID
+    pub async fn precompile_module<P: AsRef<Path>>(
         &self,
         wasm_path: P,
-    ) -> Result<(String, PerformanceMetrics)> {
-        // Take memory snapshot before any operations
-        let memory_before_load = self.take_memory_snapshot()?;
+    ) -> Result<(String, PrecompileMetrics)> {
+        let total_start = Instant::now();
 
-        // Load the WebAssembly module from file - measure time separately from memory
-        let module_load_start = Instant::now();
+        // Generate unique module ID
+        let module_id = {
+            let mut counter = MODULE_COUNTER.lock().unwrap();
+            *counter += 1;
+            format!("module_{}", counter)
+        };
+
+        // Load .wasm file
+        let load_start = Instant::now();
         let wasm_bytes = fs::read(&wasm_path).context(format!(
             "Failed to read WebAssembly file: {:?}",
             wasm_path.as_ref()
         ))?;
-        let module_load_time = module_load_start.elapsed();
+        let load_time = load_start.elapsed();
+        let wasm_size = wasm_bytes.len() as u64;
 
-        // Take memory snapshot after loading
-        let memory_after_load = self.take_memory_snapshot()?;
-        let load_memory_kb = memory_after_load.process_memory_kb - memory_before_load.process_memory_kb;
+        // Compile to .cwasm
+        let compile_start = Instant::now();
+        let module = Module::from_binary(&self.engine, &wasm_bytes)
+            .context("Failed to compile WebAssembly module")?;
 
-        // Compile or get from cache - measure time separately
-        let module_compile_start = Instant::now();
-        let (module, from_cache) = if self.enable_cache {
-            match self.module_cache.get(&wasm_bytes) {
-                Some(module) => {
-                    tracing::debug!("Using cached module");
-                    (module, true)
-                }
-                None => {
-                    // Compile and cache the module
-                    tracing::debug!("Compiling new module");
-                    let module = Module::from_binary(&self.engine, &wasm_bytes)
-                        .map_err(|e| anyhow::anyhow!("Failed to compile Wasm module {}", e))?;
+        // Serialize to precompiled format
+        let precompiled_bytes = module
+            .serialize()
+            .context("Failed to serialize compiled module")?;
+        let compile_time = compile_start.elapsed();
 
-                    self.module_cache.insert(
-                        wasm_bytes.to_vec(),
-                        ModuleData {
-                            module: module.clone(),
-                            creation_time: Instant::now(),
-                            size_bytes: wasm_bytes.len(),
-                        },
-                    );
-                    (module, false)
-                }
-            }
-        } else {
-            // Always compile if cache is disabled
-            tracing::debug!("Cache disabled. Compiling module");
-            let module = Module::from_binary(&self.engine, &wasm_bytes)
-                .map_err(|e| anyhow::anyhow!("Failed to compile Wasm module {}", e))?;
-            (module, false)
-        };
-        let module_compile_time = module_compile_start.elapsed();
+        // Save .cwasm file
+        let save_start = Instant::now();
+        let cwasm_path = format!("{}/{}.cwasm", self.cache_dir, module_id);
+        fs::write(&cwasm_path, &precompiled_bytes).context("Failed to write precompiled module")?;
+        let save_time = save_start.elapsed();
+        let cwasm_size = precompiled_bytes.len() as u64;
 
-        // Take memory snapshot after compilation
-        let memory_after_compile = self.take_memory_snapshot()?;
-        let compile_memory_kb = memory_after_compile.process_memory_kb - memory_after_load.process_memory_kb;
-        
-        // Get a new sequential instance ID
-        let instance_id = {
-            let mut counter = INSTANCE_COUNTER.lock().unwrap();
-            *counter += 1;
-            counter.to_string()
+        // Store precompiled module
+        let precompiled_module = PrecompiledModule {
+            module_id: module_id.clone(),
+            cwasm_path: cwasm_path.clone(),
+            module,
+            creation_time: Instant::now(),
         };
 
-        // Store the module ID in the instances map with placeholder
-        let metrics = PerformanceMetrics {
-            module_load_time_us: module_load_time.as_micros() as u64,
-            module_compile_time_us: module_compile_time.as_micros() as u64,
-            instantiation_time_us: 0, // Will be set during run
-            total_cold_start_time_us: 0, // Will be calculated during cold start
-            warm_start_time_us: 0, // Will be set during run (same as instantiation_time_us)
-            execution_time_us: 0, // Will be set during run
-            from_cache,
-            memory_usage_kb: load_memory_kb + compile_memory_kb,
-            module_memory_kb: load_memory_kb,
-            instantiation_memory_kb: 0, // Will be set during run
-            execution_memory_kb: 0, // Will be set during run
+        self.precompiled_modules
+            .lock()
+            .await
+            .insert(module_id.clone(), precompiled_module);
+
+        let total_time = total_start.elapsed();
+
+        let metrics = PrecompileMetrics {
+            wasm_load_time_us: load_time.as_micros() as u64,
+            compilation_time_us: compile_time.as_micros() as u64,
+            save_time_us: save_time.as_micros() as u64,
+            total_precompile_time_us: total_time.as_micros() as u64,
+            wasm_size_bytes: wasm_size,
+            cwasm_size_bytes: cwasm_size,
         };
 
-        let placeholder_instance = Instance {
-            id: instance_id.clone(),
-            store: Store::new(
-                &self.engine,
-                WasmIOContext::new(
-                    instance_id.clone(),
-                    HashMap::new(),
-                    WasiCtxBuilder::new().build_p1(),
-                ),
-            ),
-            instance_pre: self.linker.instantiate_pre(&module)?,
-            run_func: None,
-            metrics: metrics.clone(),
-            memory_before_load: Some(memory_before_load),
-            memory_after_load: Some(memory_after_load),
-            memory_after_compile: Some(memory_after_compile),
-            memory_before_instantiation: None,
-            memory_after_instantiation: None,
-            memory_after_execution: None,
-        };
-
-        // Store the instance
-        self.instances.lock().await.insert(
-            instance_id.clone(),
-            Arc::new(tokio::sync::Mutex::new(placeholder_instance)),
-        );
+        // Store metrics
+        self.precompile_metrics.lock().await.push(metrics.clone());
 
         tracing::info!(
-            "Initialized module {}, total instances: {}",
-            instance_id,
-            INSTANCE_COUNTER.lock().unwrap()
+            "Precompiled module {} in {}μs (load: {}μs, compile: {}μs, save: {}μs)",
+            module_id,
+            metrics.total_precompile_time_us,
+            metrics.wasm_load_time_us,
+            metrics.compilation_time_us,
+            metrics.save_time_us
         );
 
-        // Store metrics for research
-        self.metrics.lock().await.push(metrics.clone());
-
-        Ok((instance_id, metrics))
+        Ok((module_id, metrics))
     }
 
-    /// Run a function in the given instance with environment variables and args
-    pub async fn run_instance(
+    /// Run a module with timeout and cancellation support
+    pub async fn run_module_with_timeout(
         &self,
-        instance_id: String,
+        module_id: String,
         env_vars: HashMap<String, String>,
         args: Vec<String>,
+        timeout_seconds: Option<u64>,
     ) -> Result<(PerformanceMetrics, i32)> {
-        // Take memory snapshot before instantiation - outside timing measurements
-        let memory_before_instantiation = self.take_memory_snapshot()?;
+        let execution_id = Uuid::new_v4().to_string();
+        let cancellation_token = CancellationToken::new();
+        let timeout_duration =
+            TokioDuration::from_secs(timeout_seconds.unwrap_or(self.default_timeout_seconds));
 
-        // Get the instance
-        let inst = {
-            let m = self.instances.lock().await;
-            m.get(&instance_id)
-                .cloned()
-                .context(format!("No instance: {}", instance_id))?
+        // Track this execution
+        let running_execution = RunningExecution {
+            execution_id: execution_id.clone(),
+            module_id: module_id.clone(),
+            start_time: Instant::now(),
+            cancellation_token: cancellation_token.clone(),
         };
 
-        // Important: Get data from the instance and drop the mutex guard BEFORE any await points
-        let instance_pre = {
-            let guard = inst.lock().await;
-            guard.instance_pre.clone() // Clone the pre-instance to avoid holding the guard
+        self.running_executions
+            .lock()
+            .await
+            .insert(execution_id.clone(), running_execution);
+
+        // Run with timeout and cancellation
+        let result = tokio::select! {
+            // Run with timeout
+            result = timeout(timeout_duration, self.run_module_internal(
+                execution_id.clone(),
+                module_id,
+                env_vars,
+                args,
+                cancellation_token.clone()
+            )) => {
+                match result {
+                    Ok(Ok((mut metrics, return_code))) => {
+                        metrics.execution_id = execution_id.clone();
+                        Ok((metrics, return_code))
+                    }
+                    Ok(Err(e)) => Err(e),
+                    Err(_) => {
+                        // Timeout occurred
+                        let mut metrics = PerformanceMetrics::default();
+                        metrics.execution_id = execution_id.clone();
+                        metrics.timed_out = true;
+                        self.metrics.lock().await.push(metrics.clone());
+                        Err(anyhow::anyhow!("Execution timed out after {} seconds", timeout_duration.as_secs()))
+                    }
+                }
+            }
+            // Wait for cancellation
+            _ = cancellation_token.cancelled() => {
+                let mut metrics = PerformanceMetrics::default();
+                metrics.execution_id = execution_id.clone();
+                metrics.cancelled = true;
+                self.metrics.lock().await.push(metrics.clone());
+                Err(anyhow::anyhow!("Execution was cancelled"))
+            }
         };
 
-        // Prepare WASI context with environment variables and args
+        // Remove from running executions
+        self.running_executions.lock().await.remove(&execution_id);
+
+        result
+    }
+
+    /// Internal method to run module (without timeout logic)
+    async fn run_module_internal(
+        &self,
+        execution_id: String,
+        module_id: String,
+        env_vars: HashMap<String, String>,
+        args: Vec<String>,
+        cancellation_token: CancellationToken,
+    ) -> Result<(PerformanceMetrics, i32)> {
+        let total_start = Instant::now();
+
+        // Check for cancellation before starting
+        if cancellation_token.is_cancelled() {
+            return Err(anyhow::anyhow!("Execution cancelled before start"));
+        }
+
+        // Load precompiled module
+        let load_start = Instant::now();
+        let module = self.load_precompiled_module(&module_id).await?;
+        let load_time = load_start.elapsed();
+
+        // Check for cancellation after loading
+        if cancellation_token.is_cancelled() {
+            return Err(anyhow::anyhow!("Execution cancelled during module load"));
+        }
+
+        // Prepare WASI context
         let mut wasi_builder = WasiCtxBuilder::new();
-        // Add this to explicitly set up stdout/stderr
         wasi_builder.inherit_stdout();
         wasi_builder.inherit_stderr();
-
-        // Add args all at once
         wasi_builder.args(&args);
 
-        // Add environment variables all at once
         let env_vars_refs: Vec<(&str, &str)> = env_vars
             .iter()
             .map(|(k, v)| (k.as_str(), v.as_str()))
             .collect();
-
         wasi_builder.envs(&env_vars_refs);
         let wasip1 = wasi_builder.build_p1();
 
-        // Create the I/O context with WASI
-        let io_context = WasmIOContext::new(instance_id.clone(), env_vars, wasip1);
-
-        // Create a store with the I/O context
+        // Create I/O context and store
+        let io_context = WasmIOContext::new(execution_id.clone(), env_vars, wasip1);
         let mut store = Store::new(&self.engine, io_context);
 
-        // Measure instantiation time (warm start time) - separate from memory measurements
+        // Check for cancellation before instantiation
+        if cancellation_token.is_cancelled() {
+            return Err(anyhow::anyhow!("Execution cancelled before instantiation"));
+        }
+
+        // Instantiate module
         let instantiation_start = Instant::now();
-        let instance = instance_pre
-            .instantiate_async(&mut store)
+        let instance = self
+            .linker
+            .instantiate_async(&mut store, &module)
             .await
-            .context("Failed to instantiate Wasm module")?;
+            .context("Failed to instantiate module")?;
         let instantiation_time = instantiation_start.elapsed();
 
-        // Try to pre-lookup entry function for faster invocation
-        // Check both "_start" (WASI) and "_run" (custom function)
+        // Check for cancellation after instantiation
+        if cancellation_token.is_cancelled() {
+            return Err(anyhow::anyhow!("Execution cancelled after instantiation"));
+        }
+
+        // Find entry function
         let run_func = instance
             .get_typed_func::<(), i32>(&mut store, "_start")
             .or_else(|_| instance.get_typed_func::<(), i32>(&mut store, "run"))
             .context("Failed to find entry function")?;
 
-        // Take memory snapshot after instantiation but before execution
-        let memory_after_instantiation = self.take_memory_snapshot()?;
-        let instantiation_memory_kb = memory_after_instantiation.process_memory_kb 
-                                    - memory_before_instantiation.process_memory_kb;
-
-        // Execute the function - measure time separately from memory
+        // Execute function with periodic cancellation checks
         let execution_start = Instant::now();
-        let result = run_func
-            .call_async(&mut store, ())
-            .await
-            .context("Failed to call function")?;
-        let execution_time = execution_start.elapsed();
 
-        // Take memory snapshot after execution
-        let memory_after_execution = self.take_memory_snapshot()?;
-        let execution_memory_kb = memory_after_execution.process_memory_kb 
-                                - memory_after_instantiation.process_memory_kb;
-        
-        // Calculate total memory usage
-        let total_memory_kb = memory_after_execution.process_memory_kb 
-                            - memory_before_instantiation.process_memory_kb;
+        // Create a future that executes the function
+        let execution_future = run_func.call_async(&mut store, ());
 
-        // Update metrics - must lock mutex again
-        let metrics = {
-            let mut guard = inst.lock().await;
-            
-            // Update memory snapshots for future analysis
-            guard.memory_before_instantiation = Some(memory_before_instantiation);
-            guard.memory_after_instantiation = Some(memory_after_instantiation);
-            guard.memory_after_execution = Some(memory_after_execution);
-            
-            // Update metrics
-            let mut metrics = guard.metrics.clone();
-            metrics.instantiation_time_us = instantiation_time.as_micros() as u64;
-            metrics.warm_start_time_us = instantiation_time.as_micros() as u64; // Warm start = instantiation time
-            metrics.execution_time_us = execution_time.as_micros() as u64;
-            metrics.memory_usage_kb = total_memory_kb;
-            metrics.instantiation_memory_kb = instantiation_memory_kb;
-            metrics.execution_memory_kb = execution_memory_kb;
-            
-            // Update instance metrics
-            guard.metrics = metrics.clone();
-            metrics
+        // Run the execution future with cancellation checks
+        let result = tokio::select! {
+            result = execution_future => result.context("Failed to execute function")?,
+            _ = cancellation_token.cancelled() => {
+                return Err(anyhow::anyhow!("Execution cancelled during function execution"));
+            }
         };
-        
-        // Add to research metrics
-        self.metrics.lock().await.push(metrics.clone());
 
-        tracing::info!("Function execution finished with result: {}", result);
-        tracing::info!("Memory usage: Instantiation: {}KB, Execution: {}KB, Total: {}KB", 
-                      instantiation_memory_kb, execution_memory_kb, total_memory_kb);
+        let execution_time = execution_start.elapsed();
+        let total_time = total_start.elapsed();
 
-        // Return both metrics and result
-        Ok((metrics, result))
-    }
-
-    /// Run a cold start (init + run) with file input only
-    pub async fn init_and_run<P: AsRef<Path>>(
-        &self,
-        wasm_path: P,
-        env_vars: HashMap<String, String>,
-        args: Vec<String>,
-    ) -> Result<(String, PerformanceMetrics, i32)> {
-
-        // Initialize the instance
-        let (instance_id, init_metrics) = self.init_instance_from_file(&wasm_path).await?;
-
-        // Run the instance
-        let (run_metrics, result) = self
-            .run_instance(instance_id.clone(), env_vars, args)
-            .await?;
-
-        // Redefine cold start time = load time + compile time + instantiation time
-        let combined_metrics = PerformanceMetrics {
-            module_load_time_us: init_metrics.module_load_time_us,
-            module_compile_time_us: init_metrics.module_compile_time_us,
-            instantiation_time_us: run_metrics.instantiation_time_us,
-            execution_time_us: run_metrics.execution_time_us,
-            warm_start_time_us: run_metrics.instantiation_time_us, // Warm start = instantiation time
-            total_cold_start_time_us: init_metrics.module_load_time_us + 
-                                     init_metrics.module_compile_time_us + 
-                                     run_metrics.instantiation_time_us,
-            from_cache: init_metrics.from_cache,
-            memory_usage_kb: run_metrics.memory_usage_kb,
-            module_memory_kb: init_metrics.module_memory_kb,
-            instantiation_memory_kb: run_metrics.instantiation_memory_kb,
-            execution_memory_kb: run_metrics.execution_memory_kb,
+        let metrics = PerformanceMetrics {
+            execution_id: execution_id.clone(),
+            module_load_time_us: load_time.as_micros() as u64,
+            instantiation_time_us: instantiation_time.as_micros() as u64,
+            execution_time_us: execution_time.as_micros() as u64,
+            total_run_time_us: total_time.as_micros() as u64,
+            timed_out: false,
+            cancelled: false,
         };
 
         // Store metrics
-        self.metrics.lock().await.push(combined_metrics.clone());
+        self.metrics.lock().await.push(metrics.clone());
 
-        Ok((instance_id, combined_metrics, result))
+        tracing::info!(
+            "Executed module {} (execution: {}) in {}μs (load: {}μs, instantiate: {}μs, execute: {}μs)",
+            module_id,
+            execution_id.clone(),
+            metrics.total_run_time_us,
+            metrics.module_load_time_us,
+            metrics.instantiation_time_us,
+            metrics.execution_time_us
+        );
+
+        Ok((metrics, result))
     }
 
-    /// Benchmark throughput by running the instance multiple times
+    /// Convenience method that uses the default timeout
+    pub async fn run_module(
+        &self,
+        module_id: String,
+        env_vars: HashMap<String, String>,
+        args: Vec<String>,
+    ) -> Result<(PerformanceMetrics, i32)> {
+        self.run_module_with_timeout(module_id, env_vars, args, None)
+            .await
+    }
+
+    /// Load a precompiled module (from cache or disk)
+    async fn load_precompiled_module(&self, module_id: &str) -> Result<Module> {
+        // Check if module is in memory cache
+        {
+            let modules = self.precompiled_modules.lock().await;
+            if let Some(precompiled) = modules.get(module_id) {
+                tracing::debug!("Using cached module {}", module_id);
+                return Ok(precompiled.module.clone());
+            }
+        }
+
+        // Load from disk
+        let cwasm_path = format!("{}/{}.cwasm", self.cache_dir, module_id);
+        if !Path::new(&cwasm_path).exists() {
+            anyhow::bail!("Precompiled module not found: {}", module_id);
+        }
+
+        tracing::debug!("Loading precompiled module from disk: {}", cwasm_path);
+        let precompiled_bytes =
+            fs::read(&cwasm_path).context("Failed to read precompiled module")?;
+
+        // Deserialize module
+        let module = unsafe {
+            Module::deserialize(&self.engine, &precompiled_bytes)
+                .context("Failed to deserialize precompiled module")?
+        };
+
+        // Cache the module
+        let precompiled_module = PrecompiledModule {
+            module_id: module_id.to_string(),
+            cwasm_path,
+            module: module.clone(),
+            creation_time: Instant::now(),
+        };
+
+        self.precompiled_modules
+            .lock()
+            .await
+            .insert(module_id.to_string(), precompiled_module);
+
+        Ok(module)
+    }
+
+    /// Benchmark throughput by running a module multiple times
     pub async fn benchmark_throughput(
         &self,
-        instance_id: String,
+        module_id: String,
         iterations: usize,
         env_vars: HashMap<String, String>,
         args: Vec<String>,
+        timeout_seconds: Option<u64>,
     ) -> Result<(f64, Vec<Duration>)> {
         let mut durations = Vec::with_capacity(iterations);
 
         for _ in 0..iterations {
             let start = Instant::now();
             let _ = self
-                .run_instance(instance_id.clone(), env_vars.clone(), args.clone())
+                .run_module_with_timeout(
+                    module_id.clone(),
+                    env_vars.clone(),
+                    args.clone(),
+                    timeout_seconds,
+                )
                 .await?;
             durations.push(start.elapsed());
         }
@@ -430,125 +466,107 @@ impl Runtime {
         Ok((ops_per_second, durations))
     }
 
-    /// Get detailed memory metrics for an instance
-    pub async fn get_detailed_memory_metrics(&self, instance_id: &str) -> Result<DetailedMemoryMetrics> {
-        let instances = self.instances.lock().await;
-        let instance = instances
-            .get(instance_id)
-            .context(format!("No instance: {}", instance_id))?;
+    /// Terminate a running execution
+    pub async fn terminate_execution(&self, execution_id: &str) -> Result<()> {
+        let running_executions = self.running_executions.lock().await;
 
-        let guard = instance.lock().await;
-        
-        // Get memory snapshots
-        let memory_before_load = guard.memory_before_load.clone()
-            .context("Memory snapshot before load not available")?;
-        let memory_after_compile = guard.memory_after_compile.clone()
-            .context("Memory snapshot after compile not available")?;
-            
-        // These may not be available if run hasn't been called yet
-        let memory_after_execution = guard.memory_after_execution.clone();
-        let memory_before_instantiation = guard.memory_before_instantiation.clone();
-        let memory_after_instantiation = guard.memory_after_instantiation.clone();
-        
-        // Calculate memory metrics
-        let mut metrics = DetailedMemoryMetrics {
-            process_memory_before_kb: memory_before_load.process_memory_kb,
-            process_memory_after_compile_kb: memory_after_compile.process_memory_kb,
-            process_memory_after_execution_kb: memory_after_execution.clone()
-                .map(|m| m.process_memory_kb)
-                .unwrap_or(0),
-            module_memory_kb: guard.metrics.module_memory_kb,
-            instantiation_memory_kb: guard.metrics.instantiation_memory_kb,
-            execution_memory_kb: guard.metrics.execution_memory_kb,
-            total_memory_kb: guard.metrics.memory_usage_kb,
-            system_total_memory_kb: memory_before_load.total_memory_kb,
-            system_used_memory_kb: memory_before_load.used_memory_kb,
-        };
-        
-        // Add the instantiation and execution metrics if available
-        if let (Some(before_inst), Some(after_inst), Some(after_exec)) = 
-            (memory_before_instantiation, memory_after_instantiation, memory_after_execution.clone()) {
-            metrics.instantiation_memory_kb = after_inst.process_memory_kb - before_inst.process_memory_kb;
-            metrics.execution_memory_kb = after_exec.process_memory_kb - after_inst.process_memory_kb;
-        }
-
-        Ok(metrics)
-    }
-
-    /// Get memory overhead for an instance
-    pub async fn get_memory_overhead(&self, instance_id: &str) -> Result<u64> {
-        let instances = self.instances.lock().await;
-        let instance = instances
-            .get(instance_id)
-            .context(format!("No instance: {}", instance_id))?;
-
-        let guard = instance.lock().await;
-
-        Ok(guard.metrics.memory_usage_kb)
-    }
-
-    /// Terminate and remove an instance
-    pub async fn terminate_instance(&self, instance_id: &str) -> Result<()> {
-        let mut instances = self.instances.lock().await;
-        if instances.remove(instance_id).is_some() {
-            tracing::info!(
-                "Terminated instance {}, remaining instances: {}",
-                instance_id,
-                instances.len()
-            );
+        if let Some(execution) = running_executions.get(execution_id) {
+            execution.cancellation_token.cancel();
+            tracing::info!("Terminated execution: {}", execution_id);
             Ok(())
         } else {
-            anyhow::bail!("Instance not found: {}", instance_id);
+            Err(anyhow::anyhow!("Execution not found: {}", execution_id))
         }
     }
 
-    /// Get all collected metrics for research
+    /// Get all running executions
+    pub async fn get_running_executions(&self) -> Vec<RunningExecution> {
+        self.running_executions
+            .lock()
+            .await
+            .values()
+            .cloned()
+            .collect()
+    }
+
+    /// Terminate all running executions for a specific module
+    pub async fn terminate_module_executions(&self, module_id: &str) -> Result<usize> {
+        let running_executions = self.running_executions.lock().await;
+        let mut count = 0;
+
+        for execution in running_executions.values() {
+            if execution.module_id == module_id {
+                execution.cancellation_token.cancel();
+                count += 1;
+            }
+        }
+
+        tracing::info!("Terminated {} executions for module: {}", count, module_id);
+        Ok(count)
+    }
+
+    /// Set default timeout for the runtime
+    pub fn set_default_timeout(&mut self, timeout_seconds: u64) {
+        self.default_timeout_seconds = timeout_seconds;
+    }
+
+    /// Get all collected runtime metrics
     pub async fn get_metrics(&self) -> Vec<PerformanceMetrics> {
         self.metrics.lock().await.clone()
     }
 
-    /// Export metrics to a CSV file for analysis
-    pub async fn export_metrics_to_csv<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        let metrics = self.metrics.lock().await;
-        if metrics.is_empty() {
-            return Ok(());
+    /// Get all collected precompilation metrics
+    pub async fn get_precompile_metrics(&self) -> Vec<PrecompileMetrics> {
+        self.precompile_metrics.lock().await.clone()
+    }
+
+    /// Export metrics to CSV files
+    pub async fn export_metrics_to_csv<P: AsRef<Path>>(&self, base_path: P) -> Result<()> {
+        let base = base_path.as_ref();
+
+        // Export runtime metrics
+        let runtime_metrics = self.metrics.lock().await;
+        if !runtime_metrics.is_empty() {
+            let runtime_path = base.with_extension("runtime.csv");
+            let mut csv = String::from("execution_id,module_load_time_us,instantiation_time_us,execution_time_us,total_run_time_us,timed_out,cancelled\n");
+
+            for metric in runtime_metrics.iter() {
+                csv.push_str(&format!(
+                    "{},{},{},{},{},{},{}\n",
+                    metric.execution_id,
+                    metric.module_load_time_us,
+                    metric.instantiation_time_us,
+                    metric.execution_time_us,
+                    metric.total_run_time_us,
+                    metric.timed_out as i32,
+                    metric.cancelled as i32
+                ));
+            }
+
+            fs::write(runtime_path, csv)?;
         }
 
-        let mut csv = String::from("module_load_time_us,module_compile_time_us,instantiation_time_us,total_cold_start_time_us,warm_start_time_us,execution_time_us,from_cache,memory_usage_kb,module_memory_kb,instantiation_memory_kb,execution_memory_kb\n");
+        // Export precompilation metrics
+        let precompile_metrics = self.precompile_metrics.lock().await;
+        if !precompile_metrics.is_empty() {
+            let precompile_path = base.with_extension("precompile.csv");
+            let mut csv = String::from("wasm_load_time_us,compilation_time_us,save_time_us,total_precompile_time_us,wasm_size_bytes,cwasm_size_bytes\n");
 
-        for metric in metrics.iter() {
-            csv.push_str(&format!(
-                "{},{},{},{},{},{},{},{},{},{},{}\n",
-                metric.module_load_time_us,
-                metric.module_compile_time_us,
-                metric.instantiation_time_us,
-                metric.total_cold_start_time_us,
-                metric.warm_start_time_us,
-                metric.execution_time_us,
-                metric.from_cache as i32,
-                metric.memory_usage_kb,
-                metric.module_memory_kb,
-                metric.instantiation_memory_kb,
-                metric.execution_memory_kb
-            ));
+            for metric in precompile_metrics.iter() {
+                csv.push_str(&format!(
+                    "{},{},{},{},{},{}\n",
+                    metric.wasm_load_time_us,
+                    metric.compilation_time_us,
+                    metric.save_time_us,
+                    metric.total_precompile_time_us,
+                    metric.wasm_size_bytes,
+                    metric.cwasm_size_bytes
+                ));
+            }
+
+            fs::write(precompile_path, csv)?;
         }
-
-        fs::write(path, csv)?;
 
         Ok(())
     }
-}
-
-/// Detailed memory metrics for analysis
-#[derive(Debug, Clone)]
-pub struct DetailedMemoryMetrics {
-    pub process_memory_before_kb: u64,
-    pub process_memory_after_compile_kb: u64,
-    pub process_memory_after_execution_kb: u64,
-    pub module_memory_kb: u64,
-    pub instantiation_memory_kb: u64,
-    pub execution_memory_kb: u64,
-    pub total_memory_kb: u64,
-    pub system_total_memory_kb: u64,
-    pub system_used_memory_kb: u64,
 }
