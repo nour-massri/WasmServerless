@@ -13,13 +13,30 @@ wasm-opt -Oz /home/mnm/work/wasmserverless/rust/hello_world/hello_wasm.wasm  -o 
 curl --unix-socket /tmp/wasm-serverless.sock -X POST http://localhost/init \
   -H "Content-Type: application/json" \
   -d '{
-      "wasm_path": "/home/mnm/work/wasmserverless/rust/hello_world/hello_world.wasm"
+      "wasm_path": "/home/mnm/work/wasmserverless/hello_world.wasm"
+  }'
+curl --unix-socket /tmp/wasm-serverless.sock -X POST http://localhost/init \
+  -H "Content-Type: application/json" \
+  -d '{
+      "wasm_path": "/home/mnm/work/wasmserverless/api_aggregator.wasm"
+  }'
+curl --unix-socket /tmp/wasm-serverless.sock -X POST http://localhost/init \
+  -H "Content-Type: application/json" \
+  -d '{
+      "wasm_path": "/home/mnm/work/wasmserverless/primes_sieve.wasm"
   }'
 
 curl --unix-socket /tmp/wasm-serverless.sock -X POST http://localhost/run \
 -H "Content-Type: application/json" \
 -d '{
   "module_id": "module_1"
+}'
+
+curl --unix-socket /tmp/wasm-serverless.sock -X POST http://localhost/run \
+-H "Content-Type: application/json" \
+-d '{
+  "module_id": "module_1",
+  "args" : ["prog", "50"]
 }'
 
 curl --unix-socket /tmp/wasm-serverless.sock -X POST http://localhost/init \
