@@ -126,6 +126,56 @@ impl From<PrecompileMetrics> for PrecompileMetricsResponse {
         }
     }
 }
+#[derive(Debug, Deserialize)]
+struct CpuBurstBenchmarkRequest {
+    module_id: String,
+    num_executions: usize,
+    batch_size: usize,
+    #[serde(default)]
+    args: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct IoBenchmarkRequest {
+    module_id: String,
+    num_executions: usize,
+    concurrent_limit: usize,
+    requests_per_execution: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct BurstBenchmarkResponse {
+    pub total_executions: usize,
+    pub successful_executions: usize,
+    pub failed_executions: usize,
+    pub total_time_ms: u64,
+    pub average_execution_time_us: f64,
+    pub cold_start_time_us: f64,
+    pub average_cold_start_time_us: f64,
+    pub scaling_time_ms: u64,
+    pub peak_concurrency: usize,
+    pub operations_per_second: f64,
+    pub p50_latency_us: f64,
+    pub p95_latency_us: f64,
+    pub p99_latency_us: f64,
+}
+
+#[derive(Debug, Serialize)]
+struct NetworkBenchmarkResponse {
+    pub total_requests: usize,
+    pub successful_requests: usize,
+    pub failed_requests: usize,
+    pub total_time_ms: u64,
+    pub average_execution_time_us: f64,
+    pub average_connection_setup_time_us: f64,
+    pub end_to_end_latency_us: f64,
+    pub network_overhead_percentage: f64,
+    pub concurrent_connections_peak: usize,
+    pub requests_per_second: f64,
+    pub p50_latency_us: f64,
+    pub p95_latency_us: f64,
+    pub p99_latency_us: f64,
+}
 
 // HTTP handler
 async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Response<Body>> {
@@ -179,6 +229,82 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .header("Content-Type", "application/json")
                 .body(Body::from(response_json))?)
         }
+
+        // // CPU burst benchmark
+        // ("POST", "/benchmark/cpu-burst") => {
+        //     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
+        //     let benchmark_req: CpuBurstBenchmarkRequest = serde_json::from_slice(&body_bytes)?;
+
+        //     let metrics = runtime
+        //         .benchmark_cpu_burst(
+        //             benchmark_req.module_id,
+        //             benchmark_req.num_executions,
+        //             benchmark_req.batch_size,
+        //             benchmark_req.args,
+        //         )
+        //         .await?;
+
+        //     let response = BurstBenchmarkResponse {
+        //         total_executions: metrics.total_executions,
+        //         successful_executions: metrics.successful_executions,
+        //         failed_executions: metrics.failed_executions,
+        //         total_time_ms: metrics.total_time_ms,
+        //         average_execution_time_us: metrics.average_execution_time_us,
+        //         cold_start_time_us: metrics.cold_start_time_us,
+        //         average_cold_start_time_us: metrics.average_cold_start_time_us,
+        //         scaling_time_ms: metrics.scaling_time_ms,
+        //         peak_concurrency: metrics.peak_concurrency,
+        //         operations_per_second: metrics.operations_per_second,
+        //         p50_latency_us: metrics.p50_latency_us,
+        //         p95_latency_us: metrics.p95_latency_us,
+        //         p99_latency_us: metrics.p99_latency_us,
+        //     };
+
+        //     let response_json = serde_json::to_string(&response)?;
+
+        //     Ok(Response::builder()
+        //         .status(StatusCode::OK)
+        //         .header("Content-Type", "application/json")
+        //         .body(Body::from(response_json))?)
+        // }
+
+        // // I/O heavy benchmark
+        // ("POST", "/benchmark/io-heavy") => {
+        //     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
+        //     let benchmark_req: IoBenchmarkRequest = serde_json::from_slice(&body_bytes)?;
+
+        //     let metrics = runtime
+        //         .benchmark_io_heavy(
+        //             benchmark_req.module_id,
+        //             benchmark_req.num_executions,
+        //             benchmark_req.concurrent_limit,
+        //             benchmark_req.requests_per_execution,
+        //         )
+        //         .await?;
+
+        //     let response = NetworkBenchmarkResponse {
+        //         total_requests: metrics.total_requests,
+        //         successful_requests: metrics.successful_requests,
+        //         failed_requests: metrics.failed_requests,
+        //         total_time_ms: metrics.total_time_ms,
+        //         average_execution_time_us: metrics.average_execution_time_us,
+        //         average_connection_setup_time_us: metrics.average_connection_setup_time_us,
+        //         end_to_end_latency_us: metrics.end_to_end_latency_us,
+        //         network_overhead_percentage: metrics.network_overhead_percentage,
+        //         concurrent_connections_peak: metrics.concurrent_connections_peak,
+        //         requests_per_second: metrics.requests_per_second,
+        //         p50_latency_us: metrics.p50_latency_us,
+        //         p95_latency_us: metrics.p95_latency_us,
+        //         p99_latency_us: metrics.p99_latency_us,
+        //     };
+
+        //     let response_json = serde_json::to_string(&response)?;
+
+        //     Ok(Response::builder()
+        //         .status(StatusCode::OK)
+        //         .header("Content-Type", "application/json")
+        //         .body(Body::from(response_json))?)
+        // }
 
         // Benchmark a precompiled module
         ("POST", "/benchmark") => {

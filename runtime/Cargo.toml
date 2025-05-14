@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 wasmtime = { version = "32.0.0", features = ["component-model", "cache", "winch"] }
 wasmtime-wasi = "32.0.0"
+reqwest = { version = "0.12.15", features = ["json"] }
 tokio = { version = "1.29", features = ["full"] }
 tokio-util = "0.7.15"
 anyhow = "1.0"
@@ -26,6 +27,7 @@ num_cpus = "1.16"
 tokio-stream = { version = "0.1", features = ["net"] }
 sysinfo = "0.35.0"
 clap = { version = "4.5.37", features = ["derive"] }
+wasmtime-wasi-http = "32.0.0"
 
 [profile.release]
 lto = true

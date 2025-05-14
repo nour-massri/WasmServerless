@@ -7,6 +7,9 @@ use std::path::Path;
 use std::sync::Mutex;
 use wasmtime::*;
 use wasmtime_wasi::preview1::WasiP1Ctx;
+use std::time::Duration;
+use tokio::time::timeout;
+use std::future::Future;
 
 /// Context for Wasm instance to handle I/O operations
 pub struct WasmIOContext {
@@ -161,57 +164,6 @@ pub struct HostFunctions;
 impl HostFunctions {
     pub fn register(linker: &mut Linker<WasmIOContext>) -> Result<()> {
         // Environment variables
-        linker.func_wrap(
-            "env",
-            "get_env",
-            |mut caller: Caller<'_, WasmIOContext>,
-             name_ptr: i32,
-             name_len: i32,
-             value_ptr: i32,
-             value_len: i32|
-             -> i32 {
-                let mem = match caller.get_export("memory") {
-                    Some(Extern::Memory(mem)) => mem,
-                    _ => return -1,
-                };
-
-                // Read the environment variable name
-                let mut name_bytes = vec![0; name_len as usize];
-                if mem
-                    .read(&mut caller, name_ptr as usize, &mut name_bytes)
-                    .is_err()
-                {
-                    return -1;
-                }
-
-                let name = match std::str::from_utf8(&name_bytes) {
-                    Ok(n) => n,
-                    Err(_) => return -1,
-                };
-
-                // Get the environment variable
-                let value = match caller.data().get_env(name) {
-                    Some(v) => v,
-                    None => return 0, // Not found
-                };
-
-                let value_bytes = value.as_bytes();
-                if value_bytes.len() > value_len as usize {
-                    return -(value_bytes.len() as i32); // Buffer too small, return required size as negative
-                }
-
-                // Write the value to memory
-                if mem
-                    .write(&mut caller, value_ptr as usize, value_bytes)
-                    .is_err()
-                {
-                    return -1;
-                }
-
-                value_bytes.len() as i32
-            },
-        )?;
-
         // File operations
         linker.func_wrap(
             "env",
@@ -350,7 +302,118 @@ impl HostFunctions {
                 0
             },
         )?;
+        // HTTP GET Function
+        linker.func_wrap_async(
+            "env",
+            "http_get",
+            |mut caller: Caller<'_, WasmIOContext>, params: (u32, i32, u32, i32)| {
+                // Destructure parameters
+                let (url_ptr, url_len, response_ptr, response_len) = params;
+                
+                Box::new(async move {
+                    let mem = match caller.get_export("memory") {
+                        Some(Extern::Memory(mem)) => mem,
+                        _ => return Ok(-1),
+                    };
 
+                    // Read URL from memory
+                    let mut url_bytes = vec![0; url_len as usize];
+                    if mem.read(&mut caller, url_ptr as usize, &mut url_bytes).is_err() {
+                        return Ok(-1);
+                    }
+
+                    let url = match std::str::from_utf8(&url_bytes) {
+                        Ok(u) => u,
+                        Err(_) => return Ok(-1),
+                    };
+
+                    // Make HTTP request directly with async/await
+                    let client = reqwest::Client::new();
+                    let response = match timeout(Duration::from_secs(10), client.get(url).send()).await {
+                        Ok(Ok(resp)) => match resp.text().await {
+                            Ok(text) => text,
+                            Err(_) => return Ok(-2),
+                        },
+                        Ok(Err(_)) => return Ok(-3),
+                        Err(_) => return Ok(-4), // Timeout
+                    };
+
+                    let response_bytes = response.into_bytes();
+                    let copy_len = std::cmp::min(response_bytes.len(), response_len as usize);
+
+                    if mem.write(&mut caller, response_ptr as usize, &response_bytes[..copy_len]).is_err() {
+                        return Ok(-1);
+                    }
+
+                    Ok(copy_len as i32)
+                })
+            },
+        )?;
+
+        // HTTP POST Function
+        linker.func_wrap_async(
+            "env",
+            "http_post",
+            |mut caller: Caller<'_, WasmIOContext>, params: (u32, i32, u32, i32, u32, i32)| {
+                // Destructure parameters
+                let (url_ptr, url_len, body_ptr, body_len, response_ptr, response_len) = params;
+                
+                Box::new(async move {
+                    let mem = match caller.get_export("memory") {
+                        Some(Extern::Memory(mem)) => mem,
+                        _ => return Ok(-1),
+                    };
+
+                    // Read URL from memory
+                    let mut url_bytes = vec![0; url_len as usize];
+                    if mem.read(&mut caller, url_ptr as usize, &mut url_bytes).is_err() {
+                        return Ok(-1);
+                    }
+
+                    let url = match std::str::from_utf8(&url_bytes) {
+                        Ok(u) => u,
+                        Err(_) => return Ok(-1),
+                    };
+
+                    // Read body from memory
+                    let mut body_bytes = vec![0; body_len as usize];
+                    if mem.read(&mut caller, body_ptr as usize, &mut body_bytes).is_err() {
+                        return Ok(-1);
+                    }
+
+                    let body = match std::str::from_utf8(&body_bytes) {
+                        Ok(b) => b,
+                        Err(_) => return Ok(-1),
+                    };
+
+                    // Make HTTP request directly with async/await
+                    let client = reqwest::Client::new();
+                    let response = match timeout(
+                        Duration::from_secs(10), 
+                        client.post(url)
+                            .header("Content-Type", "application/json")
+                            .body(body.to_string())
+                            .send()
+                    ).await {
+                        Ok(Ok(resp)) => match resp.text().await {
+                            Ok(text) => text,
+                            Err(_) => return Ok(-2),
+                        },
+                        Ok(Err(_)) => return Ok(-3),
+                        Err(_) => return Ok(-4), // Timeout
+                    };
+
+                    let response_bytes = response.into_bytes();
+                    let copy_len = std::cmp::min(response_bytes.len(), response_len as usize);
+
+                    if mem.write(&mut caller, response_ptr as usize, &response_bytes[..copy_len]).is_err() {
+                        return Ok(-1);
+                    }
+
+                    Ok(copy_len as i32)
+                })
+            },
+        )?;
         Ok(())
     }
 }
