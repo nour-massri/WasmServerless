@@ -31,6 +31,11 @@ curl --unix-socket /tmp/wasm-serverless.sock -X POST http://localhost/init \
 curl --unix-socket /tmp/wasm-serverless.sock -X POST http://localhost/run \
 -H "Content-Type: application/json" \
 -d '{
-  "instance_id": "2",
+  "instance_id": "1",
   "args": ["2048"]
+}'
+
+curl --unix-socket /tmp/wasm-serverless.sock -X GET http://localhost/memory-detailed/1 \
+-H "Content-Type: application/json" \
+-d '{
 }'

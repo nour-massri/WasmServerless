@@ -1,25 +1,18 @@
-// Updated server.rs
-use crate::runtime::{PerformanceMetrics, Runtime};
+use crate::runtime::{DetailedMemoryMetrics, PerformanceMetrics, Runtime};
 use anyhow::Result;
 use hyper::server::conn::Http;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::net::UnixListener;
 
 // Request and response types
 #[derive(Debug, Deserialize)]
 struct InitRequest {
-    #[serde(default)]
-    module: String, // Base64 encoded Wasm module (optional)
-
-    #[serde(default)]
-    module_path: String, // Path to Wasm module file (optional)
-
+    module_path: String, // Path to Wasm module file (only option now)
     #[serde(default)]
     disable_cache: bool, // Whether to disable module caching
 }
@@ -33,10 +26,8 @@ struct InitResponse {
 #[derive(Debug, Deserialize)]
 struct RunRequest {
     instance_id: String,
-
     #[serde(default)]
     env: HashMap<String, String>, // Environment variables
-
     #[serde(default)]
     args: Vec<String>, // Command-line arguments for WASI
 }
@@ -49,25 +40,18 @@ struct RunResponse {
 }
 
 #[derive(Debug, Deserialize)]
-struct ColdStartRequest {
-    #[serde(default)]
-    module: String, // Base64 encoded Wasm module (optional)
-
-    #[serde(default)]
-    module_path: String, // Path to Wasm module file (optional)
-
+struct InitAndRunRequest {
+    module_path: String, // Path to Wasm module file (only option now)
     #[serde(default)]
     env: HashMap<String, String>, // Environment variables
-
     #[serde(default)]
     args: Vec<String>, // Command-line arguments for WASI
-
     #[serde(default)]
     disable_cache: bool, // Whether to disable module caching
 }
 
 #[derive(Debug, Serialize)]
-struct ColdStartResponse {
+struct InitAndRunResponse {
     instance_id: String,
     metrics: PerformanceMetricsResponse,
     result: i32, // Function return value
@@ -77,10 +61,8 @@ struct ColdStartResponse {
 struct BenchmarkRequest {
     instance_id: String,
     iterations: usize,
-
     #[serde(default)]
     env: HashMap<String, String>, // Environment variables
-
     #[serde(default)]
     args: Vec<String>, // Command-line arguments for WASI
 }
@@ -104,6 +86,20 @@ struct MemoryUsageResponse {
 }
 
 #[derive(Debug, Serialize)]
+struct DetailedMemoryResponse {
+    instance_id: String,
+    process_memory_before_kb: u64,
+    process_memory_after_compile_kb: u64,
+    process_memory_after_execution_kb: u64,
+    module_memory_kb: u64,
+    instantiation_memory_kb: u64,
+    execution_memory_kb: u64,
+    total_memory_kb: u64,
+    system_total_memory_kb: u64,
+    system_used_memory_kb: u64,
+}
+
+#[derive(Debug, Serialize)]
 struct MetricsResponse {
     metrics: Vec<PerformanceMetricsResponse>,
 }
@@ -118,6 +114,9 @@ struct PerformanceMetricsResponse {
     execution_time_us: u64,
     from_cache: bool,
     memory_usage_kb: u64,
+    module_memory_kb: u64,
+    instantiation_memory_kb: u64,
+    execution_memory_kb: u64,
 }
 
 impl From<PerformanceMetrics> for PerformanceMetricsResponse {
@@ -131,6 +130,26 @@ impl From<PerformanceMetrics> for PerformanceMetricsResponse {
             execution_time_us: metrics.execution_time_us,
             from_cache: metrics.from_cache,
             memory_usage_kb: metrics.memory_usage_kb,
+            module_memory_kb: metrics.module_memory_kb,
+            instantiation_memory_kb: metrics.instantiation_memory_kb,
+            execution_memory_kb: metrics.execution_memory_kb,
+        }
+    }
+}
+
+impl From<DetailedMemoryMetrics> for DetailedMemoryResponse {
+    fn from(metrics: DetailedMemoryMetrics) -> Self {
+        Self {
+            instance_id: String::new(), // Set by handler
+            process_memory_before_kb: metrics.process_memory_before_kb,
+            process_memory_after_compile_kb: metrics.process_memory_after_compile_kb,
+            process_memory_after_execution_kb: metrics.process_memory_after_execution_kb,
+            module_memory_kb: metrics.module_memory_kb,
+            instantiation_memory_kb: metrics.instantiation_memory_kb,
+            execution_memory_kb: metrics.execution_memory_kb,
+            total_memory_kb: metrics.total_memory_kb,
+            system_total_memory_kb: metrics.system_total_memory_kb,
+            system_used_memory_kb: metrics.system_used_memory_kb,
         }
     }
 }
@@ -138,24 +157,15 @@ impl From<PerformanceMetrics> for PerformanceMetricsResponse {
 // HTTP handler
 async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Response<Body>> {
     match (req.method().as_str(), req.uri().path()) {
-        // Initialize a new instance
+        // Initialize a new instance - only from file now
         ("POST", "/init") => {
             let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
             let init_req: InitRequest = serde_json::from_slice(&body_bytes)?;
 
-            // Process based on whether we have a module_path or a module
-            let (instance_id, metrics) = if !init_req.module_path.is_empty() {
-                // Create instance from file path
-                runtime
-                    .init_instance_from_file(&init_req.module_path)
-                    .await?
-            } else if !init_req.module.is_empty() {
-                // Decode base64 module and create instance
-                let module_bytes = base64::decode(&init_req.module)?;
-                runtime.init_instance(&module_bytes).await?
-            } else {
-                anyhow::bail!("Either module_path or module must be provided");
-            };
+            // Create instance from file path
+            let (instance_id, metrics) = runtime
+                .init_instance_from_file(&init_req.module_path)
+                .await?;
 
             // Return the instance ID and metrics
             let response = InitResponse {
@@ -194,29 +204,18 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .body(Body::from(response_json))?)
         }
 
-        // Cold start (initialize + run)
-        ("POST", "/coldstart") => {
+        // Cold start (initialize + run) - only from file now
+        ("POST", "/init_and_run") => {
             let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
-            let cold_req: ColdStartRequest = serde_json::from_slice(&body_bytes)?;
+            let init_and_run_req: InitAndRunRequest = serde_json::from_slice(&body_bytes)?;
 
-            // Process based on whether we have a module_path or a module
-            let wasm_bytes = if !cold_req.module_path.is_empty() {
-                // Read module from file path
-                std::fs::read(&cold_req.module_path)?
-            } else if !cold_req.module.is_empty() {
-                // Decode base64 module
-                base64::decode(&cold_req.module)?
-            } else {
-                anyhow::bail!("Either module_path or module must be provided");
-            };
-
-            // Perform cold start (init + run)
+            // Perform cold start from file
             let (instance_id, metrics, result) = runtime
-                .cold_start(&wasm_bytes, cold_req.env, cold_req.args)
+                .init_and_run(&init_and_run_req.module_path, init_and_run_req.env, init_and_run_req.args)
                 .await?;
 
             // Return response
-            let response = ColdStartResponse {
+            let response = InitAndRunResponse {
                 instance_id,
                 metrics: metrics.into(),
                 result,
@@ -287,7 +286,7 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .body(Body::from(response_json))?)
         }
 
-        // Get memory usage for an instance
+        // Get basic memory usage for an instance
         ("GET", path) if path.starts_with("/memory/") => {
             let instance_id = path.trim_start_matches("/memory/");
 
@@ -307,6 +306,25 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .body(Body::from(response_json))?)
         }
 
+        // Get detailed memory metrics for an instance
+        ("GET", path) if path.starts_with("/memory-detailed/") => {
+            let instance_id = path.trim_start_matches("/memory-detailed/");
+
+            // Get detailed memory metrics
+            let metrics = runtime.get_detailed_memory_metrics(instance_id).await?;
+            
+            // Create response
+            let mut response: DetailedMemoryResponse = metrics.into();
+            response.instance_id = instance_id.to_string();
+            
+            let response_json = serde_json::to_string(&response)?;
+
+            Ok(Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "application/json")
+                .body(Body::from(response_json))?)
+        }
+
         // Export metrics to CSV
         ("POST", "/export-metrics") => {
             let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
@@ -318,7 +336,7 @@ async fn handle_request(req: Request<Body>, runtime: Arc<Runtime>) -> Result<Res
                 .unwrap_or("metrics.csv");
 
             // Export metrics to CSV
-            // runtime.export_metrics_to_csv(path)?;
+            runtime.export_metrics_to_csv(path).await?;
 
             Ok(Response::builder()
                 .status(StatusCode::OK)
