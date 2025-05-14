@@ -9,13 +9,11 @@ use wasmtime::*;
 use wasmtime_wasi::preview1::WasiP1Ctx;
 use std::time::Duration;
 use tokio::time::timeout;
-use std::future::Future;
 
 /// Context for Wasm instance to handle I/O operations
 pub struct WasmIOContext {
     ctx: WasiP1Ctx,
     instance_id: String,
-    env_vars: HashMap<String, String>,
     stdout: Mutex<Vec<u8>>,
     stderr: Mutex<Vec<u8>>,
     file_handles: Mutex<HashMap<u32, Box<dyn ReadWriteSync + Send>>>,
@@ -32,7 +30,6 @@ impl WasmIOContext {
         Self {
             ctx,
             instance_id,
-            env_vars,
             stdout: Mutex::new(Vec::new()),
             stderr: Mutex::new(Vec::new()),
             file_handles: Mutex::new(HashMap::new()),
@@ -72,11 +69,6 @@ impl WasmIOContext {
             String::from_utf8_lossy(bytes)
         );
         Ok(bytes.len())
-    }
-
-    /// Get environment variable
-    pub fn get_env(&self, name: &str) -> Option<String> {
-        self.env_vars.get(name).cloned()
     }
 
     /// Open a file
