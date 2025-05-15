@@ -3,5 +3,5 @@ rust/*/target/
 
 *.wasm
 wasm/*
-
+dataset/
 todo.txt
