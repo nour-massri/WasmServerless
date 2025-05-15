@@ -1,3 +1,4 @@
+//runtime.rs
 use crate::hostfuncs::{HostFunctions, WasmIOContext};
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
@@ -5,7 +6,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tokio::time::{timeout, Duration as TokioDuration};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
@@ -26,6 +27,7 @@ pub struct PerformanceMetrics {
     pub total_run_time_us: u64,     // Total time from load to execution complete
     pub timed_out: bool,            // Whether execution timed out
     pub cancelled: bool,            // Whether execution was cancelled
+    pub loaded_from_memory: bool,   // NEW: Whether module was loaded from memory cache
 }
 
 // Precompilation metrics
@@ -65,6 +67,7 @@ pub struct Runtime {
     pub metrics: tokio::sync::Mutex<Vec<PerformanceMetrics>>,
     pub precompile_metrics: tokio::sync::Mutex<Vec<PrecompileMetrics>>,
     cache_dir: String,
+    cache_modules: bool,                // NEW: Whether to use in-memory module cache
     default_timeout_seconds: u64,
 }
 
@@ -119,6 +122,7 @@ impl Runtime {
             metrics: tokio::sync::Mutex::new(Vec::new()),
             precompile_metrics: tokio::sync::Mutex::new(Vec::new()),
             cache_dir: cache_path.to_string_lossy().to_string(),
+            cache_modules: cache,  // MODIFIED: Store the cache flag
             default_timeout_seconds: default_timeout_seconds.unwrap_or(300), // 5 minutes default
         })
     }
@@ -289,7 +293,7 @@ impl Runtime {
 
         // Load precompiled module
         let load_start = Instant::now();
-        let module = self.load_precompiled_module(&module_id).await?;
+        let (module, loaded_from_memory) = self.load_precompiled_module(&module_id).await?;
         let load_time = load_start.elapsed();
 
         // Check for cancellation after loading
@@ -311,7 +315,7 @@ impl Runtime {
         let wasip1 = wasi_builder.build_p1();
 
         // Create I/O context and store
-        let io_context = WasmIOContext::new(execution_id.clone(), env_vars, wasip1);
+        let io_context = WasmIOContext::new(execution_id.clone(), wasip1);
         let mut store = Store::new(&self.engine, io_context);
 
         // Check for cancellation before instantiation
@@ -386,6 +390,7 @@ impl Runtime {
             total_run_time_us: total_time.as_micros() as u64,
             timed_out: false,
             cancelled: false,
+            loaded_from_memory,  // NEW: Track whether loaded from memory
         };
 
         // Store metrics
@@ -416,17 +421,17 @@ impl Runtime {
     }
 
     /// Load a precompiled module (from cache or disk)
-    async fn load_precompiled_module(&self, module_id: &str) -> Result<Module> {
-        // Check if module is in memory cache
-        {
+    async fn load_precompiled_module(&self, module_id: &str) -> Result<(Module, bool)> {
+        // Check if module is in memory cache (only if caching is enabled)
+        if self.cache_modules {
             let modules = self.precompiled_modules.lock().await;
             if let Some(precompiled) = modules.get(module_id) {
                 tracing::debug!("Using cached module {}", module_id);
-                return Ok(precompiled.module.clone());
+                return Ok((precompiled.module.clone(), true));
             }
         }
 
-        // Load from disk
+        // Load from disk (cold start)
         let cwasm_path = format!("{}/{}.cwasm", self.cache_dir, module_id);
         if !Path::new(&cwasm_path).exists() {
             anyhow::bail!("Precompiled module not found: {}", module_id);
@@ -442,20 +447,22 @@ impl Runtime {
                 .context("Failed to deserialize precompiled module")?
         };
 
-        // Cache the module
-        let precompiled_module = PrecompiledModule {
-            module_id: module_id.to_string(),
-            cwasm_path,
-            module: module.clone(),
-            creation_time: Instant::now(),
-        };
+        // Cache the module only if caching is enabled
+        if self.cache_modules {
+            let precompiled_module = PrecompiledModule {
+                module_id: module_id.to_string(),
+                cwasm_path,
+                module: module.clone(),
+                creation_time: Instant::now(),
+            };
 
-        self.precompiled_modules
-            .lock()
-            .await
-            .insert(module_id.to_string(), precompiled_module);
+            self.precompiled_modules
+                .lock()
+                .await
+                .insert(module_id.to_string(), precompiled_module);
+        }
 
-        Ok(module)
+        Ok((module, false))
     }
 
     /// Terminate a running execution
@@ -544,15 +551,17 @@ impl Runtime {
             let precompile_path = base.with_extension("precompile.csv");
             let mut csv = String::from("wasm_load_time_us,compilation_time_us,save_time_us,total_precompile_time_us,wasm_size_bytes,cwasm_size_bytes\n");
 
-            for metric in precompile_metrics.iter() {
+            for metric in runtime_metrics.iter() {
                 csv.push_str(&format!(
-                    "{},{},{},{},{},{}\n",
-                    metric.wasm_load_time_us,
-                    metric.compilation_time_us,
-                    metric.save_time_us,
-                    metric.total_precompile_time_us,
-                    metric.wasm_size_bytes,
-                    metric.cwasm_size_bytes
+                    "{},{},{},{},{},{},{},{}\n",
+                    metric.execution_id,
+                    metric.module_load_time_us,
+                    metric.instantiation_time_us,
+                    metric.execution_time_us,
+                    metric.total_run_time_us,
+                    metric.timed_out as i32,
+                    metric.cancelled as i32,
+                    metric.loaded_from_memory as i32
                 ));
             }
 

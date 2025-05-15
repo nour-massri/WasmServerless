@@ -38,7 +38,7 @@ struct Args {
     log_level: LogLevel,
 
     /// Enable optimization for execution speed (may increase startup time)
-    #[arg(long, default_value = "false")]
+    #[arg(long, default_value = "true")]
     optimize: bool,
 
     /// Enable module caching
@@ -56,6 +56,10 @@ struct Args {
     /// HTTP port (if set, HTTP server will be used instead of Unix socket)
     #[arg(long)]
     http_port: Option<u16>,
+
+    /// Timeout in seconds for function execution
+    #[arg(long, default_value = "60")]
+    timeout_seconds: u64,
 }
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -84,7 +88,7 @@ async fn main() -> Result<()> {
     };
 
     // Initialize wasmtime runtime with parsed arguments
-    let rt = runtime::Runtime::new(&cache_dir, args.optimize, args.cache, Some(60))?;
+    let rt = runtime::Runtime::new(&cache_dir, args.optimize, args.cache, Some(args.timeout_seconds))?;
     let rt = Arc::new(rt);
 
     // Start server

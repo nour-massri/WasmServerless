@@ -26,7 +26,7 @@ pub trait ReadWriteSync: Read + Write {}
 impl<T: Read + Write + Send + 'static> ReadWriteSync for T {}
 
 impl WasmIOContext {
-    pub fn new(instance_id: String, env_vars: HashMap<String, String>, ctx: WasiP1Ctx) -> Self {
+    pub fn new(instance_id: String, ctx: WasiP1Ctx) -> Self {
         Self {
             ctx,
             instance_id,
