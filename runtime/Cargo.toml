@@ -28,7 +28,12 @@ tokio-stream = { version = "0.1", features = ["net"] }
 sysinfo = "0.35.0"
 clap = { version = "4.5.37", features = ["derive"] }
 wasmtime-wasi-http = "32.0.0"
-
+aws-config = "1.1"
+aws-sdk-s3 = { version = "1.85.0", features = ["behavior-version-latest"] }
+aws-credential-types = "1.1"
+aws-types = "1.1"
+rust-ini = "0.21.1"
+dirs = "6.0.0"
 [profile.release]
 lto = true
 codegen-units = 1

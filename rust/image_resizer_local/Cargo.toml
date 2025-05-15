@@ -1,0 +1,13 @@
+[package]
+name = "image_resizer_local"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+image = "0.24"
+clap = { version = "4.0", features = ["derive"] }
+anyhow = "1.0"
+
+# WASM-specific configuration
+[lib]
+crate-type = ["cdylib"]

@@ -67,7 +67,7 @@ pub struct Runtime {
     pub metrics: tokio::sync::Mutex<Vec<PerformanceMetrics>>,
     pub precompile_metrics: tokio::sync::Mutex<Vec<PrecompileMetrics>>,
     cache_dir: String,
-    cache_modules: bool,                // NEW: Whether to use in-memory module cache
+    cache_modules: bool, // NEW: Whether to use in-memory module cache
     default_timeout_seconds: u64,
 }
 
@@ -122,7 +122,7 @@ impl Runtime {
             metrics: tokio::sync::Mutex::new(Vec::new()),
             precompile_metrics: tokio::sync::Mutex::new(Vec::new()),
             cache_dir: cache_path.to_string_lossy().to_string(),
-            cache_modules: cache,  // MODIFIED: Store the cache flag
+            cache_modules: cache, // MODIFIED: Store the cache flag
             default_timeout_seconds: default_timeout_seconds.unwrap_or(300), // 5 minutes default
         })
     }
@@ -325,11 +325,13 @@ impl Runtime {
 
         // Instantiate module
         let instantiation_start = Instant::now();
-        let instance = self
-            .linker
-            .instantiate_async(&mut store, &module)
-            .await
-            .context("Failed to instantiate module")?;
+        let instance = match self.linker.instantiate_async(&mut store, &module).await {
+            Ok(instance) => instance,
+            Err(err) => {
+                eprintln!("Instantiation error details: {:?}", err);
+                return Err(err).context("Failed to instantiate module");
+            }
+        };
         let instantiation_time = instantiation_start.elapsed();
 
         // Check for cancellation after instantiation
@@ -357,19 +359,19 @@ impl Runtime {
                     Err(err) => {
                         // Print the full error message with all the context
                         tracing::error!("Execution error: {}", err);
-                        
+
                         // Print the full error chain
                         let mut source = err.source();
                         while let Some(cause) = source {
                             tracing::error!("Caused by: {}", cause);
                             source = cause.source();
                         }
-                        
+
                         // Try to extract WasmBacktrace if available
                         if let Some(backtrace) = err.downcast_ref::<WasmBacktrace>() {
                             tracing::error!("WebAssembly backtrace: {:?}", backtrace);
                         }
-                        
+
                         return Err(anyhow::anyhow!("Failed to execute function: {}", err));
                     }
                 }
@@ -390,7 +392,7 @@ impl Runtime {
             total_run_time_us: total_time.as_micros() as u64,
             timed_out: false,
             cancelled: false,
-            loaded_from_memory,  // NEW: Track whether loaded from memory
+            loaded_from_memory, // NEW: Track whether loaded from memory
         };
 
         // Store metrics
