@@ -1,0 +1,412 @@
+[2m2025-05-15T09:05:00.057378Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Starting Wasm Serverless Engine
+[2m2025-05-15T09:05:00.057450Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Optimization: true
+[2m2025-05-15T09:05:00.057457Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Caching: true
+[2m2025-05-15T09:05:00.057551Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Using temporary cache directory: "/tmp/.tmpUbXJQk"
+[2m2025-05-15T09:05:00.057769Z[0m [32m INFO[0m [2mwasm_serverless::hostfuncs[0m[2m:[0m Loading AWS credentials from environment variables
+[2m2025-05-15T09:05:00.057787Z[0m [32m INFO[0m [2mwasm_serverless::hostfuncs[0m[2m:[0m Loading AWS credentials from environment variables
+[2m2025-05-15T09:05:00.057794Z[0m [32m INFO[0m [2mwasm_serverless::hostfuncs[0m[2m:[0m Successfully loaded AWS credentials
+[2m2025-05-15T09:05:00.057946Z[0m [32m INFO[0m [2mwasm_serverless[0m[2m:[0m Starting Unix socket server at /tmp/wasm-serverless.sock
+[2m2025-05-15T09:05:00.058085Z[0m [32m INFO[0m [2mwasm_serverless::server[0m[2m:[0m Unix socket server listening on "/tmp/wasm-serverless.sock"
+[2m2025-05-15T09:05:03.083116Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Precompiled module module_1 in 28275μs (load: 100μs, compile: 27773μs, save: 388μs)
+from main
+[2m2025-05-15T09:05:03.084279Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6ad95074-12cd-4a25-a594-d5474cd0450a) in 402μs (load: 2μs, instantiate: 164μs, execute: 194μs)
+from main
+[2m2025-05-15T09:05:03.084715Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: c5183b83-9188-4ab8-a020-7d95736b2b77) in 92μs (load: 0μs, instantiate: 35μs, execute: 49μs)
+from main
+[2m2025-05-15T09:05:04.086708Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 88500241-6993-4721-95f9-2d8ffb2656f2) in 412μs (load: 5μs, instantiate: 163μs, execute: 202μs)
+from main
+[2m2025-05-15T09:05:05.089287Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: efa887c4-f1e7-4a10-870b-60eac4cf51e3) in 422μs (load: 4μs, instantiate: 165μs, execute: 212μs)
+from main
+[2m2025-05-15T09:05:06.091409Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 7b379d03-01d8-49d4-9abe-74fd5b798752) in 223μs (load: 1μs, instantiate: 82μs, execute: 123μs)
+from main
+[2m2025-05-15T09:05:07.093322Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: de8c861b-4dea-4f15-8dbb-c963cf3a4512) in 223μs (load: 1μs, instantiate: 83μs, execute: 122μs)
+from main
+[2m2025-05-15T09:05:08.095241Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: eed03964-8e95-493d-a93f-20ea98353b94) in 218μs (load: 1μs, instantiate: 83μs, execute: 116μs)
+from main
+[2m2025-05-15T09:05:09.097145Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: d7d9474c-9c97-4279-bc02-a60912b005dc) in 218μs (load: 1μs, instantiate: 82μs, execute: 117μs)
+from main
+[2m2025-05-15T09:05:10.098193Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 7c329fa9-c492-4348-aab6-46f38f4de78d) in 231μs (load: 1μs, instantiate: 84μs, execute: 128μs)
+from main
+[2m2025-05-15T09:05:11.100093Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 9c8d14b3-2d2c-4972-9c32-4455e41cef2b) in 222μs (load: 1μs, instantiate: 83μs, execute: 121μs)
+from main
+[2m2025-05-15T09:05:12.102063Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 272f4f72-ef2a-4c9e-bfbb-16b55a9c90de) in 220μs (load: 1μs, instantiate: 83μs, execute: 118μs)
+from main
+[2m2025-05-15T09:05:13.103955Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a5ef51ac-38af-4024-bae1-98562589b0fa) in 218μs (load: 1μs, instantiate: 83μs, execute: 117μs)
+from main
+[2m2025-05-15T09:05:14.106106Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 0267bf93-5c1b-419c-b23b-cddeb16fe40a) in 290μs (load: 3μs, instantiate: 113μs, execute: 148μs)
+from main
+[2m2025-05-15T09:05:15.108060Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a7a9a406-ec5b-4674-984b-7cdac8368f35) in 219μs (load: 1μs, instantiate: 85μs, execute: 116μs)
+from main
+[2m2025-05-15T09:05:16.109990Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 66d81241-02c4-4e2d-9f67-5389575ea1ea) in 227μs (load: 1μs, instantiate: 83μs, execute: 126μs)
+from main
+[2m2025-05-15T09:05:17.112425Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 57f2c135-1e3a-45ac-b4a2-55bc887ebfae) in 221μs (load: 1μs, instantiate: 82μs, execute: 121μs)
+from main
+[2m2025-05-15T09:05:18.114167Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 2483cee3-8793-43f0-8f6d-560ddf45ca22) in 219μs (load: 1μs, instantiate: 83μs, execute: 117μs)
+from main
+[2m2025-05-15T09:05:19.116061Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 14d79ba5-a0f6-44fd-8c2c-f7c026415102) in 218μs (load: 1μs, instantiate: 82μs, execute: 118μs)
+from main
+[2m2025-05-15T09:05:20.117982Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a54e8a49-bf0c-45eb-9592-0c846b61bac7) in 221μs (load: 1μs, instantiate: 83μs, execute: 119μs)
+from main
+[2m2025-05-15T09:05:21.119882Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 116e3c35-d88f-4f0e-8e9e-1231d9951a21) in 228μs (load: 1μs, instantiate: 83μs, execute: 127μs)
+from main
+[2m2025-05-15T09:05:22.121802Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 39ad5d77-34c0-4a40-b9ad-3867db3b4865) in 240μs (load: 1μs, instantiate: 102μs, execute: 120μs)
+from main
+[2m2025-05-15T09:05:23.123694Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 4a167f70-62a7-40c2-ad70-6d0811f7648f) in 222μs (load: 1μs, instantiate: 84μs, execute: 119μs)
+from main
+[2m2025-05-15T09:05:24.125584Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6a66c304-3549-4be3-b6c9-221ba8b4949e) in 219μs (load: 1μs, instantiate: 82μs, execute: 118μs)
+from main
+[2m2025-05-15T09:05:25.127512Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 2cd3c966-3e69-477b-ae45-81e3dbced7c3) in 223μs (load: 1μs, instantiate: 85μs, execute: 120μs)
+from main
+[2m2025-05-15T09:05:26.129418Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 5e6c6835-19c1-4d52-bc36-5ff97f6a035a) in 226μs (load: 1μs, instantiate: 84μs, execute: 124μs)
+from main
+[2m2025-05-15T09:05:27.131358Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 8359dfc0-a54e-473a-9c95-791fbf57f257) in 224μs (load: 1μs, instantiate: 83μs, execute: 123μs)
+from main
+[2m2025-05-15T09:05:28.133249Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: eb7e7a3e-ec42-47db-a1c7-8b7335785959) in 219μs (load: 1μs, instantiate: 83μs, execute: 117μs)
+from main
+[2m2025-05-15T09:05:29.134183Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 9752b1d9-d96e-4ab9-a0fa-309e394b1e77) in 220μs (load: 1μs, instantiate: 83μs, execute: 119μs)
+from main
+[2m2025-05-15T09:05:30.136076Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 82a7f951-d69f-4fab-bb86-d756d75c873c) in 220μs (load: 1μs, instantiate: 84μs, execute: 118μs)
+from main
+[2m2025-05-15T09:05:31.138002Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: dbe17c77-c934-49e1-85ee-9ee587b47aab) in 219μs (load: 1μs, instantiate: 83μs, execute: 118μs)
+from main
+[2m2025-05-15T09:05:32.139021Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a8c23677-4817-4b36-a9d2-590285cddcd5) in 232μs (load: 1μs, instantiate: 84μs, execute: 129μs)
+from main
+[2m2025-05-15T09:05:33.140596Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 34e99f03-63ef-4ee2-91b4-e1532fc460c4) in 253μs (load: 20μs, instantiate: 89μs, execute: 122μs)
+from main
+[2m2025-05-15T09:05:34.142215Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 9c624f20-9bdb-462b-a554-22698686f161) in 224μs (load: 1μs, instantiate: 84μs, execute: 121μs)
+from main
+[2m2025-05-15T09:05:35.144161Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 259928bb-fe99-487b-9722-95bff6c6f33a) in 225μs (load: 1μs, instantiate: 85μs, execute: 122μs)
+from main
+[2m2025-05-15T09:05:36.146139Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 1b39157e-d4a7-4fc3-b5f7-0699b5f0a03e) in 228μs (load: 1μs, instantiate: 84μs, execute: 126μs)
+from main
+[2m2025-05-15T09:05:37.148136Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 207e0349-ea9b-4070-8008-66f77395ebc2) in 235μs (load: 1μs, instantiate: 84μs, execute: 132μs)
+from main
+[2m2025-05-15T09:05:38.150152Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 812da946-6059-487e-8750-526a26fdd229) in 237μs (load: 1μs, instantiate: 86μs, execute: 132μs)
+from main
+[2m2025-05-15T09:05:39.152139Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: d02037a8-2a7a-4f5a-a10b-baddd71e7e1f) in 238μs (load: 2μs, instantiate: 93μs, execute: 122μs)
+from main
+[2m2025-05-15T09:05:40.154115Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 3ff10d3f-324c-4b25-ac5e-258f212c3dff) in 223μs (load: 1μs, instantiate: 85μs, execute: 120μs)
+from main
+[2m2025-05-15T09:05:41.156096Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 86a563b3-be0b-4013-b7f3-e3eeae4f2096) in 226μs (load: 1μs, instantiate: 84μs, execute: 123μs)
+from main
+[2m2025-05-15T09:05:42.158072Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 07a9ef8e-7887-4734-887a-909ff5c4c1da) in 232μs (load: 1μs, instantiate: 85μs, execute: 127μs)
+from main
+[2m2025-05-15T09:05:43.160305Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 0daaf9bf-2826-4cdc-8b37-2b399a8b109a) in 421μs (load: 5μs, instantiate: 170μs, execute: 207μs)
+from main
+[2m2025-05-15T09:05:44.162152Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: fda68e4f-c0ae-4f19-873f-61575292bbb9) in 225μs (load: 1μs, instantiate: 85μs, execute: 121μs)
+from main
+[2m2025-05-15T09:05:45.164115Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 561d843e-ca2d-4e8f-816a-1193cb00bfce) in 227μs (load: 1μs, instantiate: 85μs, execute: 123μs)
+from main
+[2m2025-05-15T09:05:46.166072Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 2cc55f01-e1c5-4927-bfa8-89bbd1545053) in 228μs (load: 1μs, instantiate: 85μs, execute: 124μs)
+from main
+[2m2025-05-15T09:05:47.168012Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: b69475fe-199c-4523-90b1-cbf714a6bc5e) in 227μs (load: 1μs, instantiate: 84μs, execute: 124μs)
+from main
+[2m2025-05-15T09:05:48.170002Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: e3d45cbe-af94-4693-ae19-bb8c4686a942) in 229μs (load: 1μs, instantiate: 84μs, execute: 126μs)
+from main
+[2m2025-05-15T09:05:49.171991Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: b6b6248a-c24f-42a4-aa53-1a87b85b55fd) in 227μs (load: 1μs, instantiate: 84μs, execute: 125μs)
+from main
+[2m2025-05-15T09:05:50.173986Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 87682d3e-e0c9-4b1e-977c-41db7ebbd8eb) in 227μs (load: 1μs, instantiate: 84μs, execute: 124μs)
+from main
+[2m2025-05-15T09:05:51.176006Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: d417d99e-c3be-41ff-8749-17c91842ceb2) in 225μs (load: 1μs, instantiate: 83μs, execute: 123μs)
+from main
+[2m2025-05-15T09:05:52.177999Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a8c35702-39d6-46cf-ab8c-f06a3cc944e5) in 231μs (load: 1μs, instantiate: 84μs, execute: 128μs)
+from main
+[2m2025-05-15T09:05:53.179972Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 686010d0-1533-49e3-b7c5-55adbc9c2f29) in 237μs (load: 1μs, instantiate: 86μs, execute: 133μs)
+from main
+[2m2025-05-15T09:05:54.181958Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 18728659-1a8f-4c48-967c-8c5cd06ff6ee) in 226μs (load: 1μs, instantiate: 84μs, execute: 123μs)
+from main
+[2m2025-05-15T09:05:55.183930Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 2da7f3c7-35a2-46b4-bf98-fa7d39a93a43) in 230μs (load: 1μs, instantiate: 85μs, execute: 126μs)
+from main
+[2m2025-05-15T09:05:56.185924Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a83a6b7a-e0e3-4d12-9716-b5ea2fb0ee0f) in 225μs (load: 1μs, instantiate: 84μs, execute: 122μs)
+from main
+[2m2025-05-15T09:05:57.187896Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: abeb44a0-7052-48b4-bc0e-e3ec71bcfb00) in 230μs (load: 1μs, instantiate: 86μs, execute: 126μs)
+from main
+[2m2025-05-15T09:05:58.189956Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: da8bf794-e9ae-457d-8fbe-ad3140ab7f85) in 257μs (load: 2μs, instantiate: 102μs, execute: 132μs)
+from main
+[2m2025-05-15T09:05:59.191989Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6917794f-784f-40d7-a876-cd0c8149a492) in 235μs (load: 2μs, instantiate: 88μs, execute: 127μs)
+from main
+[2m2025-05-15T09:06:00.194008Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 06b079ca-dd0e-4f0a-8a0f-816a743b37b6) in 227μs (load: 1μs, instantiate: 85μs, execute: 124μs)
+from main
+[2m2025-05-15T09:06:01.195993Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a51ca55f-16f2-49de-a182-6537829fd1c8) in 231μs (load: 1μs, instantiate: 84μs, execute: 128μs)
+from main
+[2m2025-05-15T09:06:02.197968Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f3884ba0-1d52-458a-922d-7049bb6e742c) in 225μs (load: 1μs, instantiate: 84μs, execute: 122μs)
+from main
+[2m2025-05-15T09:06:03.199927Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 0b5fc5fe-2dc1-41fb-9808-e26b289ebb28) in 226μs (load: 1μs, instantiate: 84μs, execute: 123μs)
+from main
+[2m2025-05-15T09:06:04.201918Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 86cad0d8-452b-402a-a8a2-4f61c6cc1f2f) in 224μs (load: 1μs, instantiate: 84μs, execute: 121μs)
+from main
+[2m2025-05-15T09:06:05.203892Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 874f0ce0-0a26-4fed-a2ff-35b0a69e5a11) in 228μs (load: 1μs, instantiate: 85μs, execute: 124μs)
+from main
+[2m2025-05-15T09:06:06.205953Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f11f1552-87f0-4d71-bcc6-4af6fc49c850) in 239μs (load: 1μs, instantiate: 92μs, execute: 127μs)
+from main
+[2m2025-05-15T09:06:07.207914Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 042e1634-4c04-4083-a9c4-0c396f087820) in 225μs (load: 1μs, instantiate: 84μs, execute: 123μs)
+from main
+[2m2025-05-15T09:06:08.209069Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ec64f495-37ba-42e9-a299-4a64a4facd04) in 231μs (load: 1μs, instantiate: 85μs, execute: 127μs)
+from main
+[2m2025-05-15T09:06:09.211106Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 4438b2c0-0460-4211-ae68-934bdac53e47) in 225μs (load: 1μs, instantiate: 84μs, execute: 122μs)
+from main
+[2m2025-05-15T09:06:10.213098Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 46156e70-27d6-4c9e-b6be-4e416a3f8952) in 225μs (load: 1μs, instantiate: 86μs, execute: 120μs)
+from main
+[2m2025-05-15T09:06:11.215139Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 79389c66-8fb4-4145-a290-4ce34aebd29d) in 227μs (load: 1μs, instantiate: 84μs, execute: 124μs)
+from main
+[2m2025-05-15T09:06:12.217148Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 7aea69c3-95fa-44ce-bf8d-872a7d771955) in 221μs (load: 1μs, instantiate: 84μs, execute: 118μs)
+from main
+[2m2025-05-15T09:06:13.219154Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: df2edd89-c88d-4b03-b64b-ea5c4da9c3af) in 235μs (load: 2μs, instantiate: 95μs, execute: 119μs)
+from main
+[2m2025-05-15T09:06:14.221175Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 412b88e1-8b20-40f5-9946-2d9283194259) in 274μs (load: 1μs, instantiate: 122μs, execute: 132μs)
+from main
+[2m2025-05-15T09:06:15.223229Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 006ea2c7-54a8-48a6-b65c-dae682074f10) in 278μs (load: 1μs, instantiate: 94μs, execute: 164μs)
+from main
+[2m2025-05-15T09:06:16.225301Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 880f9499-a789-48b0-a903-e2c51e4a4423) in 294μs (load: 1μs, instantiate: 117μs, execute: 143μs)
+from main
+[2m2025-05-15T09:06:17.227454Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: bf5d60b7-dc10-4adb-b2a7-ae472ee747d1) in 226μs (load: 1μs, instantiate: 84μs, execute: 123μs)
+from main
+[2m2025-05-15T09:06:18.229730Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 5ad35f5f-0b1b-4613-a3bb-f35eb69675de) in 329μs (load: 3μs, instantiate: 118μs, execute: 178μs)
+from main
+[2m2025-05-15T09:06:19.232142Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 5325a8cb-5bd4-4454-97d6-fbc81de61477) in 396μs (load: 5μs, instantiate: 138μs, execute: 207μs)
+from main
+[2m2025-05-15T09:06:20.234021Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a8f46050-0a96-44e5-9131-5094ffaeaa78) in 314μs (load: 4μs, instantiate: 121μs, execute: 157μs)
+from main
+[2m2025-05-15T09:06:21.236009Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 8021943d-fdef-49a7-9f28-587d3701bfc1) in 351μs (load: 4μs, instantiate: 133μs, execute: 179μs)
+from main
+[2m2025-05-15T09:06:22.238178Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 956c6dee-400f-430c-acfb-2aa30480e7f4) in 354μs (load: 4μs, instantiate: 138μs, execute: 177μs)
+from main
+[2m2025-05-15T09:06:23.240395Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 0d46dfff-5ec8-4569-a8b4-05a5b520224e) in 340μs (load: 4μs, instantiate: 134μs, execute: 170μs)
+from main
+[2m2025-05-15T09:06:24.242191Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 3f9ffe87-1e85-4126-b610-44d0629a3376) in 211μs (load: 3μs, instantiate: 73μs, execute: 111μs)
+from main
+[2m2025-05-15T09:06:25.244439Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: c03e3547-7413-4a57-9f3a-ba2b8811f963) in 356μs (load: 4μs, instantiate: 138μs, execute: 177μs)
+from main
+[2m2025-05-15T09:06:26.246782Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 78f8545c-1d73-49c8-bf8b-1508f1cc5022) in 354μs (load: 4μs, instantiate: 133μs, execute: 182μs)
+from main
+[2m2025-05-15T09:06:27.249049Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f865a455-fa18-488f-b11a-145570147ee8) in 370μs (load: 3μs, instantiate: 151μs, execute: 181μs)
+from main
+[2m2025-05-15T09:06:28.251159Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ea0bbb8a-55bd-45b8-804f-4b4dcc912521) in 353μs (load: 4μs, instantiate: 137μs, execute: 176μs)
+from main
+[2m2025-05-15T09:06:29.252986Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: b64f64a1-5726-4461-8403-16009ae1a010) in 250μs (load: 3μs, instantiate: 87μs, execute: 130μs)
+from main
+[2m2025-05-15T09:06:30.255263Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: b215c883-ed77-4da5-9691-72235f18f879) in 358μs (load: 4μs, instantiate: 138μs, execute: 179μs)
+from main
+[2m2025-05-15T09:06:31.257444Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 54591039-538d-4267-850e-6ce6cedb737b) in 361μs (load: 4μs, instantiate: 135μs, execute: 186μs)
+from main
+[2m2025-05-15T09:06:32.259626Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f4ae9449-7601-4b69-92f7-db2c89076522) in 356μs (load: 3μs, instantiate: 137μs, execute: 181μs)
+from main
+[2m2025-05-15T09:06:33.261816Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 26b266d3-98df-49e9-b9a1-f8ef4b040cc9) in 385μs (load: 4μs, instantiate: 141μs, execute: 205μs)
+from main
+[2m2025-05-15T09:06:34.263650Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: eafcf529-9969-4a67-bba4-7cc285c337fb) in 253μs (load: 3μs, instantiate: 90μs, execute: 131μs)
+from main
+[2m2025-05-15T09:06:35.265993Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: e3fdcd9d-53e4-4733-b972-8993950ce80f) in 394μs (load: 4μs, instantiate: 143μs, execute: 183μs)
+from main
+[2m2025-05-15T09:06:36.268270Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 5a38227b-8b67-499c-8d40-a7c54d4a4082) in 353μs (load: 4μs, instantiate: 133μs, execute: 181μs)
+from main
+[2m2025-05-15T09:06:37.272925Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 40470ea4-5fcd-44a8-a9dd-41cc2c86fbc7) in 342μs (load: 3μs, instantiate: 133μs, execute: 172μs)
+from main
+[2m2025-05-15T09:06:38.274548Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 9b9419fc-624c-43c4-9499-70d7e290d64d) in 359μs (load: 4μs, instantiate: 139μs, execute: 180μs)
+from main
+[2m2025-05-15T09:06:39.276939Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 325b5548-d918-41f2-aa40-ed991d21ef61) in 355μs (load: 4μs, instantiate: 135μs, execute: 181μs)
+from main
+[2m2025-05-15T09:06:40.278504Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f40f5678-7a41-44a4-aed7-baf0f98a1723) in 352μs (load: 4μs, instantiate: 128μs, execute: 184μs)
+from main
+[2m2025-05-15T09:06:41.280900Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f0da369b-d13c-4134-9022-fea1a263faaf) in 354μs (load: 4μs, instantiate: 135μs, execute: 180μs)
+from main
+[2m2025-05-15T09:06:42.282622Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 66764aba-fcb7-4292-bd1c-83c2c61928e1) in 360μs (load: 4μs, instantiate: 139μs, execute: 180μs)
+from main
+[2m2025-05-15T09:06:42.286264Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: be3cec8e-86a4-4a8e-aa9f-898a67990ec9) in 279μs (load: 2μs, instantiate: 104μs, execute: 149μs)
+from main
+[2m2025-05-15T09:06:42.286750Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 775bd725-fc06-4218-99b5-108f9fc1e822) in 204μs (load: 1μs, instantiate: 76μs, execute: 107μs)
+from main
+[2m2025-05-15T09:06:42.287565Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: dedefe3b-430f-4ff5-b201-31a5b014b9c1) in 315μs (load: 10μs, instantiate: 104μs, execute: 161μs)
+from main
+[2m2025-05-15T09:06:42.289123Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ff1d2382-9874-43f2-900e-39bb378bf449) in 235μs (load: 2μs, instantiate: 99μs, execute: 114μs)
+from main
+[2m2025-05-15T09:06:42.289663Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: e28ced3b-3531-4103-a06a-d97e4c5e17dc) in 212μs (load: 1μs, instantiate: 69μs, execute: 126μs)
+from main
+[2m2025-05-15T09:06:42.290101Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ec1f578c-d467-49ac-92c0-ca8b2ab874b2) in 173μs (load: 1μs, instantiate: 65μs, execute: 92μs)
+from main
+[2m2025-05-15T09:06:42.290894Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ea4fbdca-17ab-4380-91ff-467d24f72c18) in 194μs (load: 1μs, instantiate: 79μs, execute: 96μs)
+from main
+[2m2025-05-15T09:06:42.292061Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 82ba3a19-1b31-44f6-8dc4-badfad604313) in 287μs (load: 2μs, instantiate: 114μs, execute: 148μs)
+from main
+[2m2025-05-15T09:06:42.294037Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 0fcfe2ed-a427-4119-b378-dea2a8c6fa37) in 226μs (load: 2μs, instantiate: 87μs, execute: 116μs)
+from main
+[2m2025-05-15T09:06:42.294776Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 5082e8d6-6a61-4f0d-8835-7a58fcc88e9d) in 180μs (load: 1μs, instantiate: 72μs, execute: 94μs)
+from main
+[2m2025-05-15T09:06:42.295132Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 5f93c43e-9a5d-48b4-b1f9-8af2328e10c2) in 161μs (load: 1μs, instantiate: 62μs, execute: 84μs)
+from main
+[2m2025-05-15T09:06:42.295502Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 29181d36-db7e-4223-aff7-1b01a109e633) in 170μs (load: 1μs, instantiate: 65μs, execute: 90μs)
+from main
+[2m2025-05-15T09:06:42.295882Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6cd9a9e2-9cea-4676-9ad0-ed002de427f7) in 155μs (load: 1μs, instantiate: 58μs, execute: 84μs)
+from main
+[2m2025-05-15T09:06:42.296466Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 40801d55-b4ad-46c1-8ca0-e8fdc2a79681) in 155μs (load: 1μs, instantiate: 59μs, execute: 83μs)
+from main
+[2m2025-05-15T09:06:42.296854Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 37ff5dc1-5b67-4c1b-bd96-d9429795b72b) in 154μs (load: 1μs, instantiate: 58μs, execute: 83μs)
+from main
+[2m2025-05-15T09:06:42.297266Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 96ff24b8-4707-4a19-a865-f39063861125) in 152μs (load: 1μs, instantiate: 57μs, execute: 82μs)
+from main
+[2m2025-05-15T09:06:42.298417Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 229a22b0-adab-45c5-87e1-3ba55ad5b833) in 216μs (load: 1μs, instantiate: 84μs, execute: 113μs)
+from main
+[2m2025-05-15T09:06:42.299799Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 5d633953-e895-41e2-b736-810ee8641db3) in 216μs (load: 1μs, instantiate: 84μs, execute: 116μs)
+from main
+[2m2025-05-15T09:06:42.300167Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: b581b9f8-5ceb-42c2-ac27-f5dcf0b5d726) in 407μs (load: 8μs, instantiate: 165μs, execute: 191μs)
+from main
+[2m2025-05-15T09:06:42.300675Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6f720b6f-f120-49ef-b33f-f484978112b5) in 203μs (load: 2μs, instantiate: 77μs, execute: 107μs)
+from main
+[2m2025-05-15T09:06:42.301474Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 817e9702-82dd-4920-b13c-c68081ffca77) in 199μs (load: 1μs, instantiate: 79μs, execute: 99μs)
+from main
+[2m2025-05-15T09:06:42.301910Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f5c1d474-8a99-496f-8ddd-b8b1d1934fdd) in 191μs (load: 1μs, instantiate: 64μs, execute: 113μs)
+from main
+[2m2025-05-15T09:06:42.301978Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ea6b919b-b1fc-43c2-982c-2a5ce06fbcb6) in 224μs (load: 1μs, instantiate: 94μs, execute: 112μs)
+from main
+[2m2025-05-15T09:06:42.302284Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 4b7dfaef-bb78-4771-bc1a-e638105f3c4a) in 236μs (load: 1μs, instantiate: 99μs, execute: 113μs)
+from main
+[2m2025-05-15T09:06:42.303713Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 653cff41-56cf-4849-b3b5-05ec04ca58f1) in 169μs (load: 1μs, instantiate: 64μs, execute: 88μs)
+from main
+[2m2025-05-15T09:06:42.305029Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6e73b3bf-bcac-49c1-b0b3-8f13b33bbcaa) in 183μs (load: 1μs, instantiate: 66μs, execute: 102μs)
+from main
+[2m2025-05-15T09:06:42.305446Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 1bc1b66a-b49f-4d5c-8fef-38b53aee86c5) in 184μs (load: 1μs, instantiate: 60μs, execute: 110μs)
+from main
+[2m2025-05-15T09:06:42.305799Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: c0c82f64-f28a-4d55-9b61-98a9225efa9f) in 262μs (load: 2μs, instantiate: 138μs, execute: 83μs)
+from main
+[2m2025-05-15T09:06:42.306163Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 8358a95c-9aac-45b2-a6bf-e6e519ab4dce) in 180μs (load: 1μs, instantiate: 59μs, execute: 107μs)
+from main
+[2m2025-05-15T09:06:42.306621Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 29b6a67a-6812-45fe-b171-039950f07824) in 156μs (load: 1μs, instantiate: 55μs, execute: 87μs)
+from main
+[2m2025-05-15T09:06:42.306979Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 650ad421-2942-4037-82c6-3d366aa3f8c9) in 173μs (load: 1μs, instantiate: 53μs, execute: 108μs)
+from main
+[2m2025-05-15T09:06:42.307115Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: b6be57de-fe7f-4c8d-a9a8-a2541db24f63) in 271μs (load: 1μs, instantiate: 130μs, execute: 127μs)
+from main
+[2m2025-05-15T09:06:42.307226Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: e4e1980d-e6f2-444d-ab17-f496456b31ef) in 300μs (load: 1μs, instantiate: 188μs, execute: 98μs)
+from main
+[2m2025-05-15T09:06:42.307476Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f7097c86-d581-42bb-b299-b8df2e273bc0) in 255μs (load: 4μs, instantiate: 126μs, execute: 106μs)
+from main
+[2m2025-05-15T09:06:42.307690Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 70c5e1b6-9b35-4202-b1b4-ace2a540d110) in 153μs (load: 1μs, instantiate: 70μs, execute: 68μs)
+from main
+[2m2025-05-15T09:06:42.307884Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 70cbd647-85f9-42be-b1ba-0c25990fa0f4) in 125μs (load: 1μs, instantiate: 45μs, execute: 66μs)
+from main
+[2m2025-05-15T09:06:42.308104Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 72b92179-9814-4aca-a2bc-05491159f65c) in 125μs (load: 1μs, instantiate: 46μs, execute: 67μs)
+from main
+[2m2025-05-15T09:06:42.308846Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 9e29782e-9277-4fa7-be1d-e548de4ca184) in 159μs (load: 1μs, instantiate: 79μs, execute: 66μs)
+from main
+[2m2025-05-15T09:06:42.309180Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ee3f87e5-59c2-4f74-8d4a-25c1625f88c9) in 159μs (load: 1μs, instantiate: 63μs, execute: 81μs)
+from main
+[2m2025-05-15T09:06:42.309471Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 66378a29-4cef-4a9c-904b-792d863aaeae) in 120μs (load: 1μs, instantiate: 46μs, execute: 64μs)
+from main
+[2m2025-05-15T09:06:42.311040Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6d2dc655-feaa-4e5a-809b-44cef731b5d5) in 138μs (load: 1μs, instantiate: 55μs, execute: 71μs)
+from main
+from main
+[2m2025-05-15T09:06:42.311340Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 164ac669-8c78-47a2-be3b-7d1fea0c7d5e) in 157μs (load: 0μs, instantiate: 69μs, execute: 77μs)
+[2m2025-05-15T09:06:42.311373Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6e194999-14df-4ef4-9c50-518ae50c7c83) in 166μs (load: 1μs, instantiate: 62μs, execute: 91μs)
+from main
+[2m2025-05-15T09:06:42.312417Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 13b8ead6-2046-4202-a970-65745bbee7bd) in 241μs (load: 2μs, instantiate: 92μs, execute: 133μs)
+from main
+[2m2025-05-15T09:06:42.313097Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 736bd3dc-e513-4f38-8323-6d0aee46e33a) in 128μs (load: 1μs, instantiate: 49μs, execute: 69μs)
+from main
+[2m2025-05-15T09:06:42.313506Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: b83049b7-ab01-4323-818e-e5a29c6a2920) in 224μs (load: 0μs, instantiate: 71μs, execute: 142μs)
+from main
+from main
+[2m2025-05-15T09:06:42.313584Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 4bae2e25-cdc8-4307-bce2-0f80016593f3) in 274μs (load: 1μs, instantiate: 116μs, execute: 143μs)
+from main
+[2m2025-05-15T09:06:42.313718Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 9b46ffba-effb-48dd-959c-8622828e3803) in 361μs (load: 11μs, instantiate: 132μs, execute: 195μs)
+[2m2025-05-15T09:06:42.313722Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ff9b764e-193b-4272-96e2-261dcd5735e5) in 435μs (load: 1μs, instantiate: 98μs, execute: 323μs)
+from main
+[2m2025-05-15T09:06:42.315391Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 04df89aa-4f99-46c3-abcb-b111ce54a631) in 182μs (load: 1μs, instantiate: 68μs, execute: 99μs)
+from main
+[2m2025-05-15T09:06:44.319852Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 445dd684-0b3b-430a-a36a-974dfc615449) in 328μs (load: 4μs, instantiate: 116μs, execute: 174μs)
+from main
+[2m2025-05-15T09:06:44.320307Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 99b93643-5bc0-46d5-907b-28083dd57b14) in 190μs (load: 1μs, instantiate: 73μs, execute: 102μs)
+from main
+[2m2025-05-15T09:06:44.320558Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 7ab5c497-9c54-40b8-95f8-d2fe6a9dfcbf) in 296μs (load: 2μs, instantiate: 142μs, execute: 132μs)
+from main
+[2m2025-05-15T09:06:44.320752Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 2e458dc0-36a5-40c9-9228-65b3d03a4bed) in 257μs (load: 1μs, instantiate: 88μs, execute: 138μs)
+from main
+[2m2025-05-15T09:06:44.322800Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 51298d7f-190d-42a3-8c5b-e40a5e306472) in 287μs (load: 2μs, instantiate: 106μs, execute: 156μs)
+from main
+[2m2025-05-15T09:06:44.324633Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: eaae6e5a-4081-441c-8995-63cad1057662) in 228μs (load: 2μs, instantiate: 93μs, execute: 113μs)
+from main
+[2m2025-05-15T09:06:44.325049Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: efbbe83e-f880-4cc3-95f0-7da6082ca75c) in 180μs (load: 1μs, instantiate: 69μs, execute: 96μs)
+from main
+[2m2025-05-15T09:06:44.325506Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 66b8a82a-1277-464d-8bba-2d78504623e1) in 219μs (load: 1μs, instantiate: 89μs, execute: 112μs)
+from main
+[2m2025-05-15T09:06:44.326073Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 3f5ba143-11bb-42ae-bf31-652d0745c4fa) in 265μs (load: 1μs, instantiate: 113μs, execute: 134μs)
+from main
+from main
+[2m2025-05-15T09:06:44.326206Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ed128dbe-ba16-4457-bd6d-0fad7a67c0ad) in 383μs (load: 1μs, instantiate: 142μs, execute: 220μs)
+[2m2025-05-15T09:06:44.326253Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 47331b7b-f0f9-4616-a977-7978aad4658d) in 451μs (load: 2μs, instantiate: 138μs, execute: 290μs)
+from main
+[2m2025-05-15T09:06:44.326455Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 8cadfd09-5b32-4e48-894a-0f6670072a23) in 482μs (load: 2μs, instantiate: 228μs, execute: 220μs)
+from main
+[2m2025-05-15T09:06:44.326741Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 68e4d215-c2c2-47fd-960d-ba63a0c0e374) in 249μs (load: 1μs, instantiate: 119μs, execute: 104μs)
+from main
+[2m2025-05-15T09:06:44.328090Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 7e4f078e-d2f0-4c95-8fcb-3915d46b6ee9) in 203μs (load: 1μs, instantiate: 74μs, execute: 113μs)
+from main
+[2m2025-05-15T09:06:44.328516Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 2c04f599-3caa-4e62-8702-985ca4d6bfb9) in 182μs (load: 1μs, instantiate: 69μs, execute: 98μs)
+from main
+[2m2025-05-15T09:06:44.330054Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 396148fb-bc86-42a4-a4a0-eeddf53de118) in 186μs (load: 1μs, instantiate: 72μs, execute: 97μs)
+from main
+[2m2025-05-15T09:06:44.330688Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 817031fc-240d-4ff8-9ff6-27f9b7c278f6) in 206μs (load: 1μs, instantiate: 79μs, execute: 109μs)
+from main
+[2m2025-05-15T09:06:44.331128Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 3b889a8f-2a9f-4749-89da-88a7f31daa29) in 221μs (load: 1μs, instantiate: 93μs, execute: 109μs)
+from main
+[2m2025-05-15T09:06:44.331282Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 85c11165-d733-4ec8-b75d-27d3371a29df) in 260μs (load: 2μs, instantiate: 97μs, execute: 142μs)
+from main
+[2m2025-05-15T09:06:44.331884Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a1fe1a6f-7cc5-427f-8634-edb209ccfc3b) in 265μs (load: 2μs, instantiate: 86μs, execute: 159μs)
+from main
+[2m2025-05-15T09:06:44.332376Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 01e7f108-d117-499b-8965-d1e807e502f4) in 174μs (load: 1μs, instantiate: 67μs, execute: 91μs)
+from main
+[2m2025-05-15T09:06:44.333137Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: bb50e5d9-cec9-4c67-a952-0c82496c11cd) in 171μs (load: 1μs, instantiate: 66μs, execute: 91μs)
+from main
+[2m2025-05-15T09:06:44.333566Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 89139d5f-d080-47ff-adc3-bec1e56b440f) in 176μs (load: 1μs, instantiate: 68μs, execute: 93μs)
+from main
+[2m2025-05-15T09:06:44.335265Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 0a364352-cc4b-4a92-b23d-e0e344a4ef2e) in 229μs (load: 1μs, instantiate: 85μs, execute: 126μs)
+from main
+[2m2025-05-15T09:06:44.335662Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 420d8877-060f-478b-a086-267b5375961d) in 189μs (load: 1μs, instantiate: 63μs, execute: 112μs)
+from main
+[2m2025-05-15T09:06:44.336688Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 0efea4ce-3828-4bbf-a768-652f41224a9c) in 216μs (load: 1μs, instantiate: 78μs, execute: 119μs)
+from main
+[2m2025-05-15T09:06:44.337223Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 802e2971-b5fd-441c-8f09-a2abae8fdb2f) in 173μs (load: 1μs, instantiate: 67μs, execute: 89μs)
+from main
+[2m2025-05-15T09:06:44.338244Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: f8078095-4b01-4d1e-823f-62c4907afead) in 212μs (load: 1μs, instantiate: 86μs, execute: 107μs)
+from main
+[2m2025-05-15T09:06:44.338643Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 1a9efdd0-ba36-47a3-be67-e6024f9de988) in 196μs (load: 1μs, instantiate: 78μs, execute: 101μs)
+from main
+[2m2025-05-15T09:06:44.340618Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 7d43a640-3036-49a3-8067-bcd9255a0bd7) in 197μs (load: 1μs, instantiate: 78μs, execute: 102μs)
+from main
+from main
+[2m2025-05-15T09:06:44.341077Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a630797c-3e25-468b-ae7e-b03c8eccbf88) in 222μs (load: 1μs, instantiate: 81μs, execute: 125μs)
+[2m2025-05-15T09:06:44.341123Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 73abe673-52ed-46e4-898f-42200e160367) in 238μs (load: 1μs, instantiate: 99μs, execute: 118μs)
+from main
+[2m2025-05-15T09:06:44.341328Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 8eeec5ba-7738-4afe-b0fb-1a604fbec11e) in 333μs (load: 2μs, instantiate: 118μs, execute: 191μs)
+from main
+[2m2025-05-15T09:06:44.341743Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 440f27c1-0dab-4499-8661-231cbb164298) in 214μs (load: 1μs, instantiate: 64μs, execute: 135μs)
+from main
+[2m2025-05-15T09:06:44.341874Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: b668157e-9d12-4dec-bd85-23176a23f9aa) in 267μs (load: 1μs, instantiate: 93μs, execute: 134μs)
+from main
+[2m2025-05-15T09:06:44.342194Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 875bdf51-8a4c-4fa1-a55e-4d241b55fb27) in 184μs (load: 1μs, instantiate: 73μs, execute: 96μs)
+from main
+[2m2025-05-15T09:06:44.342480Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: fea0b684-f235-4494-a6fe-ccec42ae0260) in 310μs (load: 1μs, instantiate: 145μs, execute: 146μs)
+from main
+from main
+[2m2025-05-15T09:06:44.342548Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 23da4f2b-f645-49f6-9f3e-74f5b80b4a05) in 271μs (load: 5μs, instantiate: 125μs, execute: 121μs)
+[2m2025-05-15T09:06:44.342574Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 1be421f0-9257-4380-9640-c9ab3bbe0ac8) in 328μs (load: 2μs, instantiate: 172μs, execute: 137μs)
+from main
+[2m2025-05-15T09:06:44.342909Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: ca03d990-aa9a-4de4-a1e9-4c0f4e8c4c93) in 338μs (load: 2μs, instantiate: 201μs, execute: 115μs)
+from main
+[2m2025-05-15T09:06:44.344277Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: a1f507ee-485f-4a5e-a73c-c9401fbe3044) in 175μs (load: 1μs, instantiate: 68μs, execute: 93μs)
+from main
+[2m2025-05-15T09:06:44.344645Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: e1243bb3-469b-4af0-bd39-0f1f86b355d2) in 181μs (load: 1μs, instantiate: 62μs, execute: 104μs)
+from main
+[2m2025-05-15T09:06:44.345261Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 135b230c-de1d-49f5-bdf4-59346298655e) in 205μs (load: 1μs, instantiate: 84μs, execute: 101μs)
+from main
+from main
+[2m2025-05-15T09:06:44.345718Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6aef93cb-ce52-49f5-b0c8-1f8601dc6096) in 222μs (load: 1μs, instantiate: 72μs, execute: 136μs)
+[2m2025-05-15T09:06:44.345754Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 26ccefd0-23e8-4706-9413-4a377232cc55) in 238μs (load: 1μs, instantiate: 73μs, execute: 150μs)
+from main
+[2m2025-05-15T09:06:44.346109Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 201da119-be88-4a1b-a824-ba7c1b1c923f) in 281μs (load: 1μs, instantiate: 124μs, execute: 136μs)
+from main
+[2m2025-05-15T09:06:44.347365Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 56b279e4-4c38-48cf-8b1d-db3cfdf0a494) in 182μs (load: 1μs, instantiate: 69μs, execute: 97μs)
+from main
+[2m2025-05-15T09:06:44.349181Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 3bdf1b38-2991-415d-891b-66e6fc41cb17) in 180μs (load: 1μs, instantiate: 70μs, execute: 94μs)
+from main
+[2m2025-05-15T09:06:44.349651Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: 6a3c4ff7-6f9c-4d86-9a2d-a6d22989a1e3) in 203μs (load: 1μs, instantiate: 67μs, execute: 121μs)
+from main
+[2m2025-05-15T09:06:44.349824Z[0m [32m INFO[0m [2mwasm_serverless::runtime[0m[2m:[0m Executed module module_1 (execution: bac0297c-33ac-464c-a0d1-72bd94fde843) in 260μs (load: 1μs, instantiate: 99μs, execute: 144μs)

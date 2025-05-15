@@ -137,77 +137,30 @@ class WasmBenchmark:
         if cache:
             cmd.append("--cache")
             
-        # Create log files
-        config_name = f"{'opt' if optimize else 'no-opt'}_{'cache' if cache else 'no-cache'}"
-        stdout_log = open(f"{self.log_dir}/server_{config_name}_stdout.log", "w")
-        stderr_log = open(f"{self.log_dir}/server_{config_name}_stderr.log", "w")
-        
         print(f"Starting server with command: {' '.join(cmd)}")
-        time.sleep(5)
-
-        # self.server_process = subprocess.Popen(
-        #     cmd,
-        #     stdout=stdout_log,
-        #     stderr=stderr_log,
-        #     preexec_fn=os.setsid  # Create new process group for clean shutdown
-        # )
-        # # MODIFIED: Wait for server to start with improved health check
-        # start_time = time.time()
-        # max_wait_time = 30  # seconds
-        # check_interval = 1.5  # seconds
+       
+        stdout_log = open(f"{self.log_dir}/server_stdout.log", "w")
+        stderr_log = open(f"{self.log_dir}/server_stderr.log", "w")
         
-        # while time.time() - start_time < max_wait_time:
-        #     # Check if process is still running
-        #     if self.server_process.poll() is not None:
-        #         stdout_log.close()
-        #         stderr_log.close()
-        #         with open(f"{self.log_dir}/server_{config_name}_stderr.log", "r") as f:
-        #             stderr_content = f.read()
-        #         raise Exception(f"Server process died with exit code {self.server_process.returncode}. Stderr: {stderr_content}")
+        self.server_process = subprocess.Popen(
+            cmd,
+            stdout=stdout_log,
+            stderr=stderr_log,
+            preexec_fn=os.setsid  # Create new process group for clean shutdown
+        )
+        # Wait for server to start
+        max_wait = 30
+        start_time = time.time()
+        
+        while time.time() - start_time < max_wait:
+            if os.path.exists(self.socket_path):
+                time.sleep(2)
+                print("Server started successfully")
+                return
+            time.sleep(1)
             
-        #     # MODIFIED: Check if socket file exists before attempting connection
-        #     if not os.path.exists(self.socket_path):
-        #         print(f"Waiting for socket file to be created... ({time.time() - start_time:.1f}s)")
-        #         time.sleep(check_interval)
-        #         continue
-                
-        #     # Try a health check with timeout
-        #     try:
-        #         print(f"Attempting health check... ({time.time() - start_time:.1f}s)")
-        #         # MODIFIED: Use a standard socket connection first to verify the socket is accepting connections
-        #         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        #         sock.settimeout(3.0)
-        #         try:
-        #             sock.connect(self.socket_path)
-        #             sock.close()
-        #         except Exception as e:
-        #             print(f"Socket connection failed: {e}")
-        #             time.sleep(check_interval)
-        #             continue
-                    
-        #         # Now try the HTTP health check
-        #         conn = UnixSocketHTTPConnection(self.socket_path)
-        #         status, headers, body = conn.request("GET", "/health")
-        #         if status == 200:
-        #             print(f"Server started successfully after {time.time() - start_time:.1f} seconds")
-        #             return
-        #         else:
-        #             print(f"Health check failed with status {status}: {body}")
-        #     except Exception as e:
-        #         print(f"Health check failed: {str(e)}")
-                
-        #     time.sleep(check_interval)
-            
-        # # If we get here, capture final error state
-        # stdout_log.close()
-        # stderr_log.close()
-        # if self.server_process.poll() is not None:
-        #     with open(f"{self.log_dir}/server_{config_name}_stderr.log", "r") as f:
-        #         stderr_content = f.read()
-        #     raise Exception(f"Server failed to start within {max_wait_time} seconds. Process exited with code {self.server_process.returncode}. Stderr: {stderr_content}")
-        # else:
-        #     raise Exception(f"Server failed to start within {max_wait_time} seconds - health check timed out")
-
+        raise Exception("Server failed to start within timeout")
+    
     def stop_server(self):
         """Stop the server process"""
         if self.server_process:
